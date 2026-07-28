@@ -16,11 +16,17 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import TokenType, decode_token
 from app.models.user import User
+from app.repositories.chunk_repository import ChunkRepository
 from app.repositories.contract_repository import ContractRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
+from app.services.chunking_service import ChunkingService
 from app.services.document_service import DocumentService
+from app.services.embedding_service import EmbeddingService
+from app.services.extraction_service import ExtractionService
+from app.services.ocr_service import OCRService
+from app.services.processing_service import ProcessingService
 from app.services.storage_service import StorageService
 
 bearer_scheme = HTTPBearer()
@@ -38,6 +44,10 @@ def get_contract_repository(db: Session = Depends(get_db)) -> ContractRepository
     return ContractRepository(db)
 
 
+def get_chunk_repository(db: Session = Depends(get_db)) -> ChunkRepository:
+    return ChunkRepository(db)
+
+
 def get_storage_service() -> StorageService:
     return StorageService()
 
@@ -47,6 +57,22 @@ def get_document_service(
     storage: StorageService = Depends(get_storage_service),
 ) -> DocumentService:
     return DocumentService(contract_repo, storage)
+
+
+def get_processing_service(
+    contract_repo: ContractRepository = Depends(get_contract_repository),
+    chunk_repo: ChunkRepository = Depends(get_chunk_repository),
+    storage: StorageService = Depends(get_storage_service),
+) -> ProcessingService:
+    return ProcessingService(
+        contract_repo=contract_repo,
+        chunk_repo=chunk_repo,
+        storage=storage,
+        extraction=ExtractionService(),
+        ocr=OCRService(),
+        chunking=ChunkingService(),
+        embedding=EmbeddingService(),
+    )
 
 
 def get_auth_service(
