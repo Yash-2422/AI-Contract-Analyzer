@@ -12,7 +12,8 @@ pgvector==0.3.6
 
 # --- Auth (wired in Phase 2, listed now so image builds once) ---
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+passlib==1.7.4
+bcrypt==4.0.1  # pinned: passlib 1.7.4 is incompatible with bcrypt>=4.1's API
 python-multipart==0.0.19
 
 # --- Dev/testing ---
