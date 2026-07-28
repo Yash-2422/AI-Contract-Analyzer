@@ -7,5 +7,6 @@ that's never imported elsewhere silently gets skipped from migrations.
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
 from app.models.contract import Contract
+from app.models.chunk import DocumentChunk
 
-__all__ = ["User", "RefreshToken", "Contract"]
+__all__ = ["User", "RefreshToken", "Contract", "DocumentChunk"]
