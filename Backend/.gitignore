@@ -48,7 +48,7 @@ cache/
 # ==========================
 # AI Models
 # ==========================
-models/
+
 vector_store/
 faiss_index/
 embeddings/
