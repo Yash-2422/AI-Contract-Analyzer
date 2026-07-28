@@ -16,9 +16,12 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import TokenType, decode_token
 from app.models.user import User
+from app.repositories.contract_repository import ContractRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
+from app.services.document_service import DocumentService
+from app.services.storage_service import StorageService
 
 bearer_scheme = HTTPBearer()
 
@@ -29,6 +32,21 @@ def get_user_repository(db: Session = Depends(get_db)) -> UserRepository:
 
 def get_refresh_token_repository(db: Session = Depends(get_db)) -> RefreshTokenRepository:
     return RefreshTokenRepository(db)
+
+
+def get_contract_repository(db: Session = Depends(get_db)) -> ContractRepository:
+    return ContractRepository(db)
+
+
+def get_storage_service() -> StorageService:
+    return StorageService()
+
+
+def get_document_service(
+    contract_repo: ContractRepository = Depends(get_contract_repository),
+    storage: StorageService = Depends(get_storage_service),
+) -> DocumentService:
+    return DocumentService(contract_repo, storage)
 
 
 def get_auth_service(
