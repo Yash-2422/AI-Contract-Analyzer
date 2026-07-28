@@ -45,7 +45,11 @@ class Contract(BaseModel):
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     status: Mapped[ContractStatus] = mapped_column(
-        Enum(ContractStatus, name="contract_status"),
+        Enum(
+            ContractStatus,
+            name="contract_status",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         default=ContractStatus.UPLOADED,
         nullable=False,
     )
