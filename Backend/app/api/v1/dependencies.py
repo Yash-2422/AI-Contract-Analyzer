@@ -16,18 +16,24 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import TokenType, decode_token
 from app.models.user import User
+from app.repositories.chat_repository import ChatRepository
 from app.repositories.chunk_repository import ChunkRepository
 from app.repositories.contract_repository import ContractRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
+from app.repositories.summary_repository import SummaryRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
+from app.services.chat_service import ChatService
 from app.services.chunking_service import ChunkingService
 from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
 from app.services.extraction_service import ExtractionService
+from app.services.llm_service import LLMService
 from app.services.ocr_service import OCRService
 from app.services.processing_service import ProcessingService
+from app.services.retrieval_service import RetrievalService
 from app.services.storage_service import StorageService
+from app.services.summary_service import SummaryService
 
 bearer_scheme = HTTPBearer()
 
@@ -80,6 +86,40 @@ def get_auth_service(
     token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
 ) -> AuthService:
     return AuthService(user_repo, token_repo)
+
+
+def get_summary_repository(db: Session = Depends(get_db)) -> SummaryRepository:
+    return SummaryRepository(db)
+
+
+def get_chat_repository(db: Session = Depends(get_db)) -> ChatRepository:
+    return ChatRepository(db)
+
+
+def get_llm_service() -> LLMService:
+    return LLMService()
+
+
+def get_retrieval_service(
+    db: Session = Depends(get_db),
+) -> RetrievalService:
+    return RetrievalService(db, EmbeddingService())
+
+
+def get_summary_service(
+    chunk_repo: ChunkRepository = Depends(get_chunk_repository),
+    summary_repo: SummaryRepository = Depends(get_summary_repository),
+    llm: LLMService = Depends(get_llm_service),
+) -> SummaryService:
+    return SummaryService(chunk_repo, summary_repo, llm)
+
+
+def get_chat_service(
+    chat_repo: ChatRepository = Depends(get_chat_repository),
+    retrieval: RetrievalService = Depends(get_retrieval_service),
+    llm: LLMService = Depends(get_llm_service),
+) -> ChatService:
+    return ChatService(chat_repo, retrieval, llm)
 
 
 def get_current_user(
