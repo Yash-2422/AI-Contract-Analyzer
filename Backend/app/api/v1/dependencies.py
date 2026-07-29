@@ -18,13 +18,16 @@ from app.core.security import TokenType, decode_token
 from app.models.user import User
 from app.repositories.chat_repository import ChatRepository
 from app.repositories.chunk_repository import ChunkRepository
+from app.repositories.comparison_repository import ComparisonRepository
 from app.repositories.contract_repository import ContractRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
+from app.repositories.risk_repository import RiskRepository
 from app.repositories.summary_repository import SummaryRepository
 from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 from app.services.chat_service import ChatService
 from app.services.chunking_service import ChunkingService
+from app.services.comparison_service import ComparisonService
 from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
 from app.services.extraction_service import ExtractionService
@@ -32,6 +35,7 @@ from app.services.llm_service import LLMService
 from app.services.ocr_service import OCRService
 from app.services.processing_service import ProcessingService
 from app.services.retrieval_service import RetrievalService
+from app.services.risk_analysis_service import RiskAnalysisService
 from app.services.storage_service import StorageService
 from app.services.summary_service import SummaryService
 
@@ -120,6 +124,30 @@ def get_chat_service(
     llm: LLMService = Depends(get_llm_service),
 ) -> ChatService:
     return ChatService(chat_repo, retrieval, llm)
+
+
+def get_risk_repository(db: Session = Depends(get_db)) -> RiskRepository:
+    return RiskRepository(db)
+
+
+def get_comparison_repository(db: Session = Depends(get_db)) -> ComparisonRepository:
+    return ComparisonRepository(db)
+
+
+def get_risk_analysis_service(
+    chunk_repo: ChunkRepository = Depends(get_chunk_repository),
+    risk_repo: RiskRepository = Depends(get_risk_repository),
+    llm: LLMService = Depends(get_llm_service),
+) -> RiskAnalysisService:
+    return RiskAnalysisService(chunk_repo, risk_repo, llm)
+
+
+def get_comparison_service(
+    chunk_repo: ChunkRepository = Depends(get_chunk_repository),
+    comparison_repo: ComparisonRepository = Depends(get_comparison_repository),
+    llm: LLMService = Depends(get_llm_service),
+) -> ComparisonService:
+    return ComparisonService(chunk_repo, comparison_repo, llm)
 
 
 def get_current_user(
