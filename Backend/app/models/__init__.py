@@ -8,5 +8,15 @@ from app.models.user import User
 from app.models.refresh_token import RefreshToken
 from app.models.contract import Contract
 from app.models.chunk import DocumentChunk
+from app.models.chat import ChatSession, ChatMessage
+from app.models.summary import ContractSummary
 
-__all__ = ["User", "RefreshToken", "Contract", "DocumentChunk"]
+__all__ = [
+    "User",
+    "RefreshToken",
+    "Contract",
+    "DocumentChunk",
+    "ChatSession",
+    "ChatMessage",
+    "ContractSummary",
+]
