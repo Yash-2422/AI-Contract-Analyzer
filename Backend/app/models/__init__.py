@@ -10,6 +10,8 @@ from app.models.contract import Contract
 from app.models.chunk import DocumentChunk
 from app.models.chat import ChatSession, ChatMessage
 from app.models.summary import ContractSummary
+from app.models.risk import RiskFinding
+from app.models.comparison import ContractComparison
 
 __all__ = [
     "User",
@@ -19,4 +21,6 @@ __all__ = [
     "ChatSession",
     "ChatMessage",
     "ContractSummary",
+    "RiskFinding",
+    "ContractComparison",
 ]
