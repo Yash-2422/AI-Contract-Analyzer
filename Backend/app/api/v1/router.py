@@ -12,13 +12,16 @@ needs to change when new features are added.
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import ai, auth, documents
+from app.api.v1.endpoints import ai, auth, comparison, documents, risk, search
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
 api_router.include_router(documents.router, prefix="/contracts", tags=["Documents"])
 api_router.include_router(ai.router, tags=["AI"])
+api_router.include_router(risk.router, tags=["Risk Analysis"])
+api_router.include_router(comparison.router, tags=["Comparison"])
+api_router.include_router(search.router, tags=["Search"])
 
 
 @api_router.get("/health", tags=["System"])
