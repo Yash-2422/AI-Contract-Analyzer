@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.models.chunk import DocumentChunk
+from app.models.contract import Contract
 from app.services.embedding_service import EmbeddingService
 
 DEFAULT_TOP_K = 5
@@ -40,6 +41,29 @@ class RetrievalService:
         rows = (
             self.db.query(DocumentChunk, distance_expr.label("distance"))
             .filter(DocumentChunk.contract_id == contract_id)
+            .order_by(distance_expr)
+            .limit(top_k)
+            .all()
+        )
+
+        return [RetrievedChunk(chunk=chunk, distance=distance) for chunk, distance in rows]
+
+    def retrieve_across_user_contracts(
+        self, user_id: uuid.UUID, query: str, top_k: int = DEFAULT_TOP_K
+    ) -> list[RetrievedChunk]:
+        """
+        Same retrieval, scoped to every contract the user owns rather than
+        one - this is what powers "search across all my contracts". The
+        JOIN on Contract enforces ownership at the query level, exactly
+        like ContractRepository.get_by_id_for_user does for single lookups.
+        """
+        query_vector = self.embedding_service.embed_one(query)
+        distance_expr = DocumentChunk.embedding.cosine_distance(query_vector)
+
+        rows = (
+            self.db.query(DocumentChunk, distance_expr.label("distance"))
+            .join(Contract, Contract.id == DocumentChunk.contract_id)
+            .filter(Contract.user_id == user_id)
             .order_by(distance_expr)
             .limit(top_k)
             .all()
