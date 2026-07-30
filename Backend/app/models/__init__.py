@@ -12,6 +12,7 @@ from app.models.chat import ChatSession, ChatMessage
 from app.models.summary import ContractSummary
 from app.models.risk import RiskFinding
 from app.models.comparison import ContractComparison
+from app.models.report import GeneratedReport
 
 __all__ = [
     "User",
@@ -23,4 +24,5 @@ __all__ = [
     "ContractSummary",
     "RiskFinding",
     "ContractComparison",
+    "GeneratedReport",
 ]
