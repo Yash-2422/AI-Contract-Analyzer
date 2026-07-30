@@ -40,10 +40,11 @@ class Settings(BaseSettings):
     # --- File storage ---
     UPLOAD_DIR: str = "storage/uploads"
     MAX_UPLOAD_SIZE_MB: int = 25
+    REPORTS_DIR: str = "storage/reports"
 
     # --- AI / LLM (wired up in Phase 5) ---
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    LLM_MODEL_NAME: str = "llama3.2:3b"
+    LLM_MODEL_NAME: str = "qwen2.5:7b-instruct"
     EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
 
     model_config = SettingsConfigDict(
