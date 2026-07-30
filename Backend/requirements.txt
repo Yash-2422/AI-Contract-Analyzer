@@ -34,3 +34,7 @@ langchain-core==1.5.2
 langchain-ollama==1.1.0
 ollama==0.6.2
 tiktoken==0.13.0
+
+
+# --- Reports (Phase 7) ---
+reportlab==4.2.5
