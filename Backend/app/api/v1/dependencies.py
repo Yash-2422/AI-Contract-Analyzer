@@ -21,6 +21,7 @@ from app.repositories.chunk_repository import ChunkRepository
 from app.repositories.comparison_repository import ComparisonRepository
 from app.repositories.contract_repository import ContractRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
+from app.repositories.report_repository import ReportRepository
 from app.repositories.risk_repository import RiskRepository
 from app.repositories.summary_repository import SummaryRepository
 from app.repositories.user_repository import UserRepository
@@ -28,12 +29,14 @@ from app.services.auth_service import AuthService
 from app.services.chat_service import ChatService
 from app.services.chunking_service import ChunkingService
 from app.services.comparison_service import ComparisonService
+from app.services.dashboard_service import DashboardService
 from app.services.document_service import DocumentService
 from app.services.embedding_service import EmbeddingService
 from app.services.extraction_service import ExtractionService
 from app.services.llm_service import LLMService
 from app.services.ocr_service import OCRService
 from app.services.processing_service import ProcessingService
+from app.services.report_service import ReportService
 from app.services.retrieval_service import RetrievalService
 from app.services.risk_analysis_service import RiskAnalysisService
 from app.services.storage_service import StorageService
@@ -148,6 +151,32 @@ def get_comparison_service(
     llm: LLMService = Depends(get_llm_service),
 ) -> ComparisonService:
     return ComparisonService(chunk_repo, comparison_repo, llm)
+
+
+def get_report_repository(db: Session = Depends(get_db)) -> ReportRepository:
+    return ReportRepository(db)
+
+
+def get_dashboard_service(
+    contract_repo: ContractRepository = Depends(get_contract_repository),
+    risk_repo: RiskRepository = Depends(get_risk_repository),
+    chat_repo: ChatRepository = Depends(get_chat_repository),
+    summary_repo: SummaryRepository = Depends(get_summary_repository),
+    comparison_repo: ComparisonRepository = Depends(get_comparison_repository),
+    report_repo: ReportRepository = Depends(get_report_repository),
+) -> DashboardService:
+    return DashboardService(
+        contract_repo, risk_repo, chat_repo, summary_repo, comparison_repo, report_repo
+    )
+
+
+def get_report_service(
+    summary_repo: SummaryRepository = Depends(get_summary_repository),
+    risk_repo: RiskRepository = Depends(get_risk_repository),
+    comparison_repo: ComparisonRepository = Depends(get_comparison_repository),
+    report_repo: ReportRepository = Depends(get_report_repository),
+) -> ReportService:
+    return ReportService(summary_repo, risk_repo, comparison_repo, report_repo)
 
 
 def get_current_user(
