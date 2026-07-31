@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --focus-ring: 31 93 76; /* emerald-600 as RGB, used for focus rings */
+  }
+
+  * {
+    @apply border-ink-100;
+  }
+
+  body {
+    @apply bg-paper text-ink-900 font-sans antialiased;
+  }
+
+  /* Visible keyboard focus everywhere - accessibility floor from the
+     frontend-design skill's guidance, not optional polish. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--focus-ring));
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
