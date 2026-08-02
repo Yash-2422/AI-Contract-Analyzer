@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { useGenerateSummary, useSummary } from "@/hooks/use-summary";
 import { getErrorMessage } from "@/lib/errors";
-import { AxiosError } from "axios";
+import axios from "axios";
 
 export function SummaryTab({ contractId }: { contractId: string }) {
   const { data: summary, isLoading, error } = useSummary(contractId);
   const generateMutation = useGenerateSummary(contractId);
 
-  const notFound = error instanceof AxiosError && error.response?.status === 404;
+  const notFound = axios.isAxiosError(error) && error.response?.status === 404;
 
   return (
     <div>
