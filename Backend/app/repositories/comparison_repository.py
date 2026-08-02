@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.comparison import ContractComparison
@@ -30,4 +31,11 @@ class ComparisonRepository:
             self.db.query(ContractComparison)
             .filter(ContractComparison.id == comparison_id, ContractComparison.user_id == user_id)
             .first()
+        )
+
+    def count_for_user(self, user_id: uuid.UUID) -> int:
+        return (
+            self.db.query(func.count(ContractComparison.id))
+            .filter(ContractComparison.user_id == user_id)
+            .scalar()
         )

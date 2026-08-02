@@ -1,7 +1,9 @@
 import uuid
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.models.contract import Contract
 from app.models.summary import ContractSummary
 
 
@@ -22,4 +24,12 @@ class SummaryRepository:
             .filter(ContractSummary.contract_id == contract_id)
             .order_by(ContractSummary.created_at.desc())
             .first()
+        )
+
+    def count_for_user(self, user_id: uuid.UUID) -> int:
+        return (
+            self.db.query(func.count(ContractSummary.id))
+            .join(Contract, Contract.id == ContractSummary.contract_id)
+            .filter(Contract.user_id == user_id)
+            .scalar()
         )

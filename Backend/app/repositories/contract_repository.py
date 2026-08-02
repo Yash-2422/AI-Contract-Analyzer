@@ -80,6 +80,22 @@ class ContractRepository:
         self.db.refresh(contract)
         return contract
 
+    def update(self, contract: Contract, **fields) -> Contract:
+        for key, value in fields.items():
+            if value is not None:
+                setattr(contract, key, value)
+        self.db.commit()
+        self.db.refresh(contract)
+        return contract
+
     def delete(self, contract: Contract) -> None:
         self.db.delete(contract)
         self.db.commit()
+
+    def total_storage_bytes_for_user(self, user_id: uuid.UUID) -> int:
+        total = (
+            self.db.query(func.coalesce(func.sum(Contract.size_bytes), 0))
+            .filter(Contract.user_id == user_id)
+            .scalar()
+        )
+        return int(total)

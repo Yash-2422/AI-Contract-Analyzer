@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.chat import ChatMessage, ChatSession, MessageRole
@@ -56,4 +57,19 @@ class ChatRepository:
             .filter(ChatMessage.session_id == session_id)
             .order_by(ChatMessage.created_at)
             .all()
+        )
+
+    def session_count_for_user(self, user_id: uuid.UUID) -> int:
+        return (
+            self.db.query(func.count(ChatSession.id))
+            .filter(ChatSession.user_id == user_id)
+            .scalar()
+        )
+
+    def message_count_for_user(self, user_id: uuid.UUID) -> int:
+        return (
+            self.db.query(func.count(ChatMessage.id))
+            .join(ChatSession, ChatSession.id == ChatMessage.session_id)
+            .filter(ChatSession.user_id == user_id)
+            .scalar()
         )

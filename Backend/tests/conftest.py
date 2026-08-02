@@ -21,16 +21,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    os.environ.get(
-        "TEST_DATABASE_URL",
-        "postgresql+psycopg2://postgres:postgres@localhost:5432/contract_analyzer_test",
-    ),
+# Force tests to use the test database
+os.environ["DATABASE_URL"] = (
+    "postgresql://postgres:yash@localhost:5432/contract_analyzer_test"
 )
+
 os.environ.setdefault("UPLOAD_DIR", "/tmp/aca-test-storage")
 
-import app.models  # noqa: E402  (populates Base.metadata; import after env vars set)
+import app.models  # noqa: E402
 from app.core.database import Base, engine
 from app.main import app as fastapi_app
 from app.services import embedding_service as es_module
@@ -55,7 +53,7 @@ def _clean_tables():
     yield
     with engine.begin() as conn:
         table_names = ", ".join(f'"{t.name}"' for t in reversed(Base.metadata.sorted_tables))
-        conn.exec_driver_sql(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE")
+        conn.exec_driver_sql(f'TRUNCATE {table_names} RESTART IDENTITY CASCADE')
 
 
 @pytest.fixture(autouse=True)
@@ -110,7 +108,10 @@ def registered_user(client):
         "/api/v1/auth/register",
         json={"email": email, "password": password, "full_name": "Test User"},
     )
-    response = client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": password},
+    )
     tokens = response.json()
     headers = {"Authorization": f"Bearer {tokens['access_token']}"}
     me = client.get("/api/v1/auth/me", headers=headers).json()
