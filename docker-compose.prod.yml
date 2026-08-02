@@ -1,0 +1,39 @@
+# Production overrides. Use alongside the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# What changes from dev:
+#   - No source bind-mount on the backend (dev's live-reload volume) - the
+#     image is immutable, exactly what was built and tested ships to prod.
+#   - Ports are not published for db/redis - only the backend and frontend
+#     are reachable from outside the Docker network. The database has no
+#     business being internet-facing.
+#   - Backend runs multiple uvicorn workers instead of one.
+#   - Restart policy is "always" (not "unless-stopped") - a prod host
+#     rebooting should bring everything back up unconditionally.
+
+services:
+  db:
+    restart: always
+    ports: []  # internal-only; remove this line if you need external DB access
+
+  redis:
+    restart: always
+    ports: []
+
+  backend:
+    restart: always
+    volumes: []  # no bind mount - run exactly what's baked into the image
+    command:
+      [
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--workers",
+        "4",
+      ]
+
+  frontend:
+    restart: always
