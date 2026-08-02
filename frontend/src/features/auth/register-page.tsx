@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
-import { AxiosError } from "axios";
 
 import { AuthLayout } from "@/components/layout/auth-layout";
 import { Button } from "@/components/ui/button";
@@ -11,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiClient } from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/store/auth-store";
-import type { ApiError, TokenResponse, User } from "@/types/api";
+import type { TokenResponse, User } from "@/types/api";
 
 // Mirrors backend/app/schemas/user.py::UserRegisterRequest exactly - the
 // backend is still the source of truth and will reject anything this
@@ -62,12 +62,7 @@ export function RegisterPage() {
 
       navigate("/dashboard");
     } catch (err) {
-      if (err instanceof AxiosError && err.response?.data) {
-        const apiError = err.response.data as ApiError;
-        setServerError(apiError.message ?? "Could not create your account.");
-      } else {
-        setServerError("Something went wrong. Please try again.");
-      }
+      setServerError(getErrorMessage(err, "Could not create your account."));
     } finally {
       setIsSubmitting(false);
     }
