@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AxiosError } from "axios";
+import axios from "axios";
 import { apiClient } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 import type { SummaryResponse } from "@/types/api";
@@ -13,7 +13,7 @@ export function useSummary(contractId: string) {
     },
     retry: (failureCount, error) => {
       // 404 just means "no summary generated yet" - not worth retrying.
-      if (error instanceof AxiosError && error.response?.status === 404) return false;
+      if (axios.isAxiosError(error) && error.response?.status === 404) return false;
       return failureCount < 2;
     },
   });
