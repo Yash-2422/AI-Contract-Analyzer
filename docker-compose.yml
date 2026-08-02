@@ -24,6 +24,20 @@ services:
     ports:
       - "6379:6379"
 
+  # Optional: uncomment to run Ollama inside Docker. Many people instead
+  # run Ollama natively on the host (`ollama serve`) so it can use GPU
+  # acceleration, which Docker doesn't pass through by default on
+  # Mac/Windows - in that case leave this commented out and point
+  # OLLAMA_BASE_URL in backend/.env at http://host.docker.internal:11434.
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: contract-analyzer-ollama
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+
   backend:
     build: ./backend
     container_name: contract-analyzer-backend
@@ -40,5 +54,18 @@ services:
       redis:
         condition: service_started
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+    container_name: contract-analyzer-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
 volumes:
   db_data:
+  # ollama_data:
