@@ -38,3 +38,5 @@ tiktoken==0.13.0
 
 # --- Reports (Phase 7) ---
 reportlab==4.2.5
+
+email-validator>=2.2.0
