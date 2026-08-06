@@ -21,9 +21,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Force tests to use the test database
-os.environ["DATABASE_URL"] = (
-    "postgresql://postgres:yash@localhost:5432/contract_analyzer_test"
+# Use TEST_DATABASE_URL if provided (GitHub Actions),
+# otherwise fall back to the local test database.
+os.environ["DATABASE_URL"] = os.environ.get(
+    "TEST_DATABASE_URL",
+    "postgresql://postgres:yash@localhost:5432/contract_analyzer_test",
 )
 
 os.environ.setdefault("UPLOAD_DIR", "/tmp/aca-test-storage")
