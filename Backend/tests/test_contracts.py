@@ -42,8 +42,7 @@ def test_upload_requires_auth(client):
         "/api/v1/contracts",
         files={"file": ("contract.pdf", io.BytesIO(_pdf_bytes()), "application/pdf")},
     )
-    assert response.status_code == 403
-
+    assert response.status_code == 401
 
 def test_list_contracts_only_shows_own(client, auth_headers):
     client.post(

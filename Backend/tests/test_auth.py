@@ -45,8 +45,7 @@ def test_login_returns_tokens(registered_user):
 
 def test_me_requires_auth(client):
     response = client.get("/api/v1/auth/me")
-    assert response.status_code == 403  # no Authorization header at all
-
+    assert response.status_code == 401  
 
 def test_me_rejects_garbage_token(client):
     response = client.get("/api/v1/auth/me", headers={"Authorization": "Bearer garbage"})
