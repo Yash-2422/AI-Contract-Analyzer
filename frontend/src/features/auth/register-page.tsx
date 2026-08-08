@@ -14,10 +14,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/store/auth-store";
 import type { TokenResponse, User } from "@/types/api";
 
-// Mirrors backend/app/schemas/user.py::UserRegisterRequest exactly - the
-// backend is still the source of truth and will reject anything this
-// misses, but matching it here means the person sees the real rule before
-// they submit, not after a round trip.
+
 const registerSchema = z.object({
   full_name: z.string().min(1, "Enter your name.").max(255),
   email: z.string().email("Enter a valid email address."),
@@ -58,8 +55,7 @@ export function RegisterPage() {
       useAuthStore.getState().setTokens(tokens.access_token, tokens.refresh_token);
 
       const { data: user } = await apiClient.get<User>("/auth/me");
-      setSession(tokens.access_token, tokens.refresh_token, user);
-
+setSession(tokens.refresh_token, user);
       navigate("/dashboard");
     } catch (err) {
       setServerError(getErrorMessage(err, "Could not create your account."));

@@ -87,8 +87,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(useAuthStore.getState().accessToken).toBe("access-123");
-    });
+expect(useAuthStore.getState().refreshToken).toBe("refresh-123");    });
     expect(useAuthStore.getState().user?.email).toBe("test@example.com");
   });
 });
