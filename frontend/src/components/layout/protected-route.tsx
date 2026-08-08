@@ -10,9 +10,9 @@ import { useAuthStore } from "@/store/auth-store";
  * enforces regardless of what this component does.
  */
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const user = useAuthStore((s) => s.user);
 
-  if (!accessToken) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 

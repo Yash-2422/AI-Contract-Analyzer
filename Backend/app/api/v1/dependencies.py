@@ -8,9 +8,10 @@ before the endpoint body ever runs.
 """
 
 import uuid
+from typing import Optional
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, HTTPException, status, Request
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -42,6 +43,7 @@ from app.services.risk_analysis_service import RiskAnalysisService
 from app.services.storage_service import StorageService
 from app.services.summary_service import SummaryService
 
+# We keep this for the Swagger UI docs, but we won't use it to block requests
 bearer_scheme = HTTPBearer()
 
 
@@ -180,7 +182,7 @@ def get_report_service(
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    request: Request,
     user_repo: UserRepository = Depends(get_user_repository),
 ) -> User:
     unauthorized = HTTPException(
@@ -189,7 +191,19 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    payload = decode_token(credentials.credentials)
+    token = None
+
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+
+    if not token:
+        token = request.cookies.get("access_token")
+
+    if not token:
+        raise unauthorized
+
+    payload = decode_token(token)
     if payload is None or payload.get("type") != TokenType.ACCESS:
         raise unauthorized
 

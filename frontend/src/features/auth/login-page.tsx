@@ -38,12 +38,11 @@ export function LoginPage() {
     setIsSubmitting(true);
     try {
       const { data: tokens } = await apiClient.post<TokenResponse>("/auth/login", values);
-      // Store tokens first - /auth/me needs the access token attached by
-      // the request interceptor, which reads straight from this store.
+
       useAuthStore.getState().setTokens(tokens.access_token, tokens.refresh_token);
 
       const { data: user } = await apiClient.get<User>("/auth/me");
-      setSession(tokens.access_token, tokens.refresh_token, user);
+      setSession(tokens.refresh_token, user);
 
       navigate("/dashboard");
     } catch (err) {

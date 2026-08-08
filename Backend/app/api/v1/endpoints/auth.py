@@ -5,7 +5,7 @@ Thin by design: parse request -> call AuthService -> return response.
 No business logic lives in this file.
 """
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Response
 
 from app.api.v1.dependencies import get_auth_service, get_current_user
 from app.models.user import User
@@ -32,22 +32,41 @@ def register(
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: UserLoginRequest, auth_service: AuthService = Depends(get_auth_service)):
-    return auth_service.login(data)
+def login(data: UserLoginRequest, response: Response, auth_service: AuthService = Depends(get_auth_service)):
+    tokens = auth_service.login(data)
+    response.set_cookie(
+        key="access_token",
+        value=tokens.access_token,
+        httponly=True,
+        samesite="lax",
+        secure=False 
+    )
+    return tokens
 
 
 @router.post("/refresh", response_model=TokenResponse)
 def refresh(
-    data: RefreshTokenRequest, auth_service: AuthService = Depends(get_auth_service)
+    data: RefreshTokenRequest, response: Response, auth_service: AuthService = Depends(get_auth_service)
 ):
-    return auth_service.refresh(data.refresh_token)
+    tokens = auth_service.refresh(data.refresh_token)
+    # Update the cookie with the new rotated access token
+    response.set_cookie(
+        key="access_token",
+        value=tokens.access_token,
+        httponly=True,
+        samesite="lax",
+        secure=False
+    )
+    return tokens
 
 
 @router.post("/logout", response_model=MessageResponse)
 def logout(
-    data: RefreshTokenRequest, auth_service: AuthService = Depends(get_auth_service)
+    data: RefreshTokenRequest, response: Response, auth_service: AuthService = Depends(get_auth_service)
 ):
     auth_service.logout(data.refresh_token)
+    # Delete the cookie from the browser
+    response.delete_cookie("access_token")
     return MessageResponse(message="Logged out successfully.")
 
 
