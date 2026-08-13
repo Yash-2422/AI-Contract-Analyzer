@@ -4,6 +4,7 @@ import { FileText, LayoutDashboard, LogOut, Scale, Search } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/store/auth-store";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,9 +32,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-paper">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-ink-100 bg-white">
-        <div className="px-5 py-6">
+      <aside className="flex w-60 shrink-0 flex-col border-r border-ink-100 bg-surface">
+        <div className="flex items-center justify-between px-5 py-6">
           <p className="font-display text-lg font-medium text-ink-900">AI Contract Analyzer</p>
+          <ThemeToggle />
         </div>
 
         <nav className="flex-1 space-y-1 px-3">

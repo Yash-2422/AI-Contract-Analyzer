@@ -4,19 +4,75 @@
 
 @layer base {
   :root {
-    --focus-ring: 31 93 76; /* emerald-600 as RGB, used for focus rings */
+    color-scheme: light;
+
+    --color-paper: 250 248 243;
+    --color-surface: 255 255 255;
+
+    --color-ink-50: 245 246 247;
+    --color-ink-100: 231 233 236;
+    --color-ink-200: 199 204 211;
+    --color-ink-400: 107 116 128;
+    --color-ink-600: 61 69 82;
+    --color-ink-900: 27 36 48;
+
+    --color-emerald-50: 234 243 240;
+    --color-emerald-100: 207 227 220;
+    --color-emerald-600: 31 93 76;
+    --color-emerald-700: 22 67 56;
+
+    --color-risk-50: 251 238 231;
+    --color-risk-100: 245 211 194;
+    --color-risk-600: 193 68 14;
+
+    --color-gold: 184 134 46;
+
+    --focus-ring: 31 93 76;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    /* "Executive Suite" — deep charcoal-navy, not pure black, with
+       brightened jewel-tone accents so they still read against a dark
+       surface. Scale semantics stay the same as light mode (900 = highest
+       emphasis, 400 = muted) even though the literal luminance flips. */
+    --color-paper: 15 19 26;
+    --color-surface: 24 29 38;
+
+    --color-ink-50: 24 29 38;
+    --color-ink-100: 38 45 56;
+    --color-ink-200: 58 67 82;
+    --color-ink-400: 133 143 158;
+    --color-ink-600: 186 194 206;
+    --color-ink-900: 240 242 244;
+
+    --color-emerald-50: 15 35 30;
+    --color-emerald-100: 20 51 43;
+    --color-emerald-600: 58 176 145;
+    --color-emerald-700: 82 199 168;
+
+    --color-risk-50: 42 22 17;
+    --color-risk-100: 63 32 24;
+    --color-risk-600: 232 106 71;
+
+    --color-gold: 219 165 79;
+
+    --focus-ring: 58 176 145;
   }
 
   * {
     @apply border-ink-100;
   }
 
-  body {
-    @apply bg-paper text-ink-900 font-sans antialiased;
+  html {
+    @apply bg-paper;
   }
 
-  /* Visible keyboard focus everywhere - accessibility floor from the
-     frontend-design skill's guidance, not optional polish. */
+  body {
+    @apply bg-paper text-ink-900 font-sans antialiased transition-colors duration-200;
+  }
+
   :focus-visible {
     outline: 2px solid rgb(var(--focus-ring));
     outline-offset: 2px;

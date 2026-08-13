@@ -1,42 +1,54 @@
 import type { Config } from "tailwindcss";
 
-export default {
+const config: Config = {
   darkMode: "class",
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+
   theme: {
     extend: {
       colors: {
-        // Design tokens - see README "Design system" section for rationale.
         ink: {
-          DEFAULT: "#1B2430",
-          50: "#F5F6F7",
-          100: "#E7E9EC",
-          200: "#C7CCD3",
-          400: "#6B7480",
-          600: "#3D4552",
-          900: "#1B2430",
+          DEFAULT: "rgb(var(--color-ink-900) / <alpha-value>)",
+          50: "rgb(var(--color-ink-50) / <alpha-value>)",
+          100: "rgb(var(--color-ink-100) / <alpha-value>)",
+          200: "rgb(var(--color-ink-200) / <alpha-value>)",
+          400: "rgb(var(--color-ink-400) / <alpha-value>)",
+          600: "rgb(var(--color-ink-600) / <alpha-value>)",
+          900: "rgb(var(--color-ink-900) / <alpha-value>)",
         },
-        paper: "#FAF8F3",
+
+        paper: "rgb(var(--color-paper) / <alpha-value>)",
+
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+
         emerald: {
-          DEFAULT: "#1F5D4C",
-          50: "#EAF3F0",
-          100: "#CFE3DC",
-          600: "#1F5D4C",
-          700: "#164338",
+          DEFAULT: "rgb(var(--color-emerald-600) / <alpha-value>)",
+          50: "rgb(var(--color-emerald-50) / <alpha-value>)",
+          100: "rgb(var(--color-emerald-100) / <alpha-value>)",
+          600: "rgb(var(--color-emerald-600) / <alpha-value>)",
+          700: "rgb(var(--color-emerald-700) / <alpha-value>)",
         },
+
         risk: {
-          DEFAULT: "#C1440E",
-          50: "#FBEEE7",
-          100: "#F5D3C2",
-          600: "#C1440E",
+          DEFAULT: "rgb(var(--color-risk-600) / <alpha-value>)",
+          50: "rgb(var(--color-risk-50) / <alpha-value>)",
+          100: "rgb(var(--color-risk-100) / <alpha-value>)",
+          600: "rgb(var(--color-risk-600) / <alpha-value>)",
         },
-        gold: "#B8862E",
+
+        gold: "rgb(var(--color-gold) / <alpha-value>)",
       },
+
       fontFamily: {
         display: ["Newsreader", "ui-serif", "Georgia", "serif"],
         sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
       },
+
       borderRadius: {
         lg: "0.625rem",
         md: "0.5rem",
@@ -44,5 +56,8 @@ export default {
       },
     },
   },
+
   plugins: [],
-} satisfies Config;
+};
+
+export default config;

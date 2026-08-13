@@ -6,12 +6,17 @@ import { ContractsPage } from "@/pages/contracts-page";
 import { ContractDetailPage } from "@/pages/contract-detail-page";
 import { ComparePage } from "@/pages/compare-page";
 import { SearchPage } from "@/pages/search-page";
+import { LandingPage } from "@/pages/landing-page";
 import { ProtectedRoute } from "@/components/layout/protected-route";
+import { useThemeSync } from "@/hooks/use-theme-sync";
 
 export function App() {
+  useThemeSync();
+
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
@@ -56,8 +61,7 @@ export function App() {
           }
         />
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
