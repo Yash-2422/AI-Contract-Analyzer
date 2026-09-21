@@ -32,7 +32,7 @@ services:
         "--port",
         "8000",
         "--workers",
-        "4",
+        "1",
       ]
 
   frontend:

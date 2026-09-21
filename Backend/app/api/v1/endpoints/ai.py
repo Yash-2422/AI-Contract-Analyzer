@@ -7,9 +7,11 @@ session-scoped routes - a user can never summarize, chat with, or read
 chat history for a contract that isn't theirs.
 """
 
+import json
 import uuid
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 
 from app.api.v1.dependencies import (
     get_chat_service,
@@ -80,7 +82,10 @@ def create_chat_session(
     return chat_service.create_session(contract_id, current_user.id, data.title)
 
 
-@router.get("/contracts/{contract_id}/chat/sessions", response_model=list[ChatSessionResponse])
+@router.get(
+    "/contracts/{contract_id}/chat/sessions",
+    response_model=list[ChatSessionResponse],
+)
 def list_chat_sessions(
     contract_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -102,15 +107,72 @@ def send_message(
     current_user: User = Depends(get_current_user),
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    session = chat_service.get_session_owned_or_404(session_id, current_user.id)
-    return chat_service.send_message(session, data.content)
+    session = chat_service.get_session_owned_or_404(
+        session_id,
+        current_user.id,
+    )
+
+    return chat_service.send_message(
+        session,
+        data.content,
+    )
 
 
-@router.get("/chat/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
+@router.get(
+    "/chat/sessions/{session_id}/messages",
+    response_model=list[ChatMessageResponse],
+)
 def list_messages(
     session_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    chat_service.get_session_owned_or_404(session_id, current_user.id)  # ownership check
+    chat_service.get_session_owned_or_404(
+        session_id,
+        current_user.id,
+    )  # ownership check
+
     return chat_service.list_messages(session_id)
+
+
+# --- Streaming Chat ---
+
+
+@router.post("/chat/sessions/{session_id}/messages/stream")
+def stream_message(
+    session_id: uuid.UUID,
+    data: SendMessageRequest,
+    current_user: User = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    """
+    SSE streaming variant of send_message.
+
+    The session ownership is checked before streaming begins.
+    The ChatService handles retrieval and LLM token generation.
+    """
+
+    session = chat_service.get_session_owned_or_404(
+        session_id,
+        current_user.id,
+    )
+
+    token_gen, finalize = chat_service.stream_message(
+        session,
+        data.content,
+    )
+
+    def event_stream():
+        try:
+            for token in token_gen:
+                yield f"data: {json.dumps({'token': token})}\n\n"
+        finally:
+            # Save the completed/partial assistant response.
+            finalize()
+
+        yield "event: done\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+    )

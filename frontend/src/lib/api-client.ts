@@ -3,7 +3,7 @@ import { useAuthStore } from "@/store/auth-store";
 import type { TokenResponse } from "@/types/api";
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "/api/v1",
+  baseURL: import.meta.env.VITE_API_URL || "/api/v1",
   withCredentials: true,
 });
 

@@ -15,7 +15,7 @@
     <script>
       (function () {
         try {
-          var stored = JSON.parse(localStorage.getItem("aca-theme") || "null");
+          var stored = JSON.parse(localStorage.getItem("theme-storage") || "null");
           var theme = stored && stored.state ? stored.state.theme : null;
           var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
           if (theme === "dark" || (!theme && prefersDark)) {

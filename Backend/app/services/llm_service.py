@@ -30,6 +30,9 @@ class LLMService:
                 base_url=settings.OLLAMA_BASE_URL,
                 model=settings.LLM_MODEL_NAME,
                 temperature=0.1,  # low temperature: contract analysis wants consistency, not creativity
+                num_ctx=4096,  # Ollama defaults to 2048 tokens regardless of the model's real context
+                   # window, silently truncating longer prompts. Contract text + risk-analysis
+                   # instructions easily exceed that, so this must be set explicitly.
             )
         return LLMService._llm
 

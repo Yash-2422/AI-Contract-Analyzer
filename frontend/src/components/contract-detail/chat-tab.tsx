@@ -7,8 +7,8 @@ import {
   useChatMessages,
   useChatSessions,
   useCreateChatSession,
-  useSendMessage,
 } from "@/hooks/use-chat";
+import { useChatStream } from "@/hooks/use-chat-stream";
 import { getErrorMessage } from "@/lib/errors";
 
 export function ChatTab({ contractId }: { contractId: string }) {
@@ -20,11 +20,11 @@ export function ChatTab({ contractId }: { contractId: string }) {
 
   const sessionId = activeSessionId ?? sessions?.[0]?.id;
   const { data: messages } = useChatMessages(sessionId);
-  const sendMessage = useSendMessage(sessionId ?? "");
+  const { streamedText, isStreaming, error, sendStreamingMessage } = useChatStream();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  }, [messages, streamedText]);
 
   async function handleStartSession() {
     const session = await createSession.mutateAsync();
@@ -32,9 +32,10 @@ export function ChatTab({ contractId }: { contractId: string }) {
   }
 
   function handleSend() {
-    if (!input.trim() || !sessionId) return;
-    sendMessage.mutate(input.trim());
+    if (!input.trim() || !sessionId || isStreaming) return;
+    const content = input.trim();
     setInput("");
+    sendStreamingMessage(sessionId, content);
   }
 
   if (!sessions) {
@@ -58,7 +59,7 @@ export function ChatTab({ contractId }: { contractId: string }) {
   return (
     <div className="flex h-[500px] flex-col">
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto pr-1">
-        {messages?.length === 0 && (
+        {messages?.length === 0 && !isStreaming && (
           <p className="text-sm text-ink-400">Ask a question about this contract to get started.</p>
         )}
         {messages?.map((message) => (
@@ -84,14 +85,20 @@ export function ChatTab({ contractId }: { contractId: string }) {
             </div>
           </div>
         ))}
-        {sendMessage.isPending && (
-          <p className="text-sm text-ink-400">Thinking...</p>
+
+        {isStreaming && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-lg border border-ink-100 bg-white px-4 py-2.5 text-sm text-ink-900">
+              <p className="whitespace-pre-wrap">
+                {streamedText || <span className="text-ink-400">Thinking...</span>}
+                {streamedText && <span className="animate-pulse">▍</span>}
+              </p>
+            </div>
+          </div>
         )}
       </div>
 
-      {sendMessage.isError && (
-        <p className="mt-2 text-sm text-risk-600">{getErrorMessage(sendMessage.error)}</p>
-      )}
+      {error && <p className="mt-2 text-sm text-risk-600">{getErrorMessage(error, error)}</p>}
 
       <div className="mt-3 flex gap-2 border-t border-ink-100 pt-3">
         <Textarea
@@ -107,7 +114,7 @@ export function ChatTab({ contractId }: { contractId: string }) {
           rows={2}
           className="resize-none"
         />
-        <Button onClick={handleSend} disabled={sendMessage.isPending || !input.trim()}>
+        <Button onClick={handleSend} disabled={isStreaming || !input.trim()}>
           <Send className="h-4 w-4" />
         </Button>
       </div>

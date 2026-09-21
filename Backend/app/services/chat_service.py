@@ -22,7 +22,6 @@ context excerpts below, which were retrieved from that contract. If the answer \
 isn't in the provided context, say clearly that the contract doesn't appear to \
 address that, rather than guessing. When you do answer, mention which page the \
 relevant clause is on.
-
 Context excerpts from the contract:
 {context}
 """
@@ -43,18 +42,34 @@ class ChatService:
         self.retrieval = retrieval
         self.llm = llm
 
-    def create_session(self, contract_id: uuid.UUID, user_id: uuid.UUID, title: str | None):
-        return self.chat_repo.create_session(contract_id, user_id, title or "New conversation")
+    def create_session(
+        self,
+        contract_id: uuid.UUID,
+        user_id: uuid.UUID,
+        title: str | None,
+    ):
+        return self.chat_repo.create_session(
+            contract_id,
+            user_id,
+            title or "New conversation",
+        )
 
     def list_sessions(self, contract_id: uuid.UUID, user_id: uuid.UUID):
         return self.chat_repo.list_sessions(contract_id, user_id)
 
-    def get_session_owned_or_404(self, session_id: uuid.UUID, user_id: uuid.UUID):
+    def get_session_owned_or_404(
+        self,
+        session_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ):
         session = self.chat_repo.get_session_for_user(session_id, user_id)
+
         if session is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found."
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Chat session not found.",
             )
+
         return session
 
     def list_messages(self, session_id: uuid.UUID):
@@ -63,10 +78,18 @@ class ChatService:
     def send_message(self, session, content: str) -> ChatMessage:
         # 1. Persist the user's message first, so it's not lost even if the
         #    LLM call below fails.
-        self.chat_repo.create_message(session.id, MessageRole.USER, content, cited_chunk_ids=[])
+        self.chat_repo.create_message(
+            session.id,
+            MessageRole.USER,
+            content,
+            cited_chunk_ids=[],
+        )
 
         # 2. Retrieve the chunks most relevant to THIS question.
-        retrieved = self.retrieval.retrieve(session.contract_id, content)
+        retrieved = self.retrieval.retrieve(
+            session.contract_id,
+            content,
+        )
 
         if not retrieved:
             answer = (
@@ -76,22 +99,137 @@ class ChatService:
             cited_ids: list[uuid.UUID] = []
         else:
             context = "\n\n".join(
-                f"[Page {r.chunk.page_number}]\n{r.chunk.content}" for r in retrieved
+                f"[Page {r.chunk.page_number}]\n{r.chunk.content}"
+                for r in retrieved
             )
-            system_prompt = CHAT_SYSTEM_PROMPT_TEMPLATE.format(context=context)
+
+            system_prompt = CHAT_SYSTEM_PROMPT_TEMPLATE.format(
+                context=context
+            )
 
             history = self._build_history(session.id)
+
             answer = self.llm.generate(
                 system_prompt=system_prompt,
-                messages=[*history, {"role": "user", "content": content}],
+                messages=[
+                    *history,
+                    {"role": "user", "content": content},
+                ],
             )
+
             cited_ids = [r.chunk.id for r in retrieved]
 
         # 3. Persist the assistant's reply with which chunks grounded it.
         return self.chat_repo.create_message(
-            session.id, MessageRole.ASSISTANT, answer, cited_chunk_ids=cited_ids
+            session.id,
+            MessageRole.ASSISTANT,
+            answer,
+            cited_chunk_ids=cited_ids,
         )
 
-    def _build_history(self, session_id: uuid.UUID) -> list[dict]:
-        messages = self.chat_repo.list_messages(session_id)[-MAX_HISTORY_MESSAGES:]
-        return [{"role": m.role.value, "content": m.content} for m in messages]
+    def stream_message(self, session, content: str):
+        """
+        Same flow as send_message, but yields the assistant's reply as it's
+        generated instead of returning it all at once.
+
+        Critically: retrieval and the user-message write happen BEFORE this
+        generator starts yielding - by the time token streaming begins, this
+        function no longer needs the DB. The final assistant message is
+        saved in ONE short write after the last token, not held open across the
+        whole stream. This is what avoids connection-pool exhaustion:
+        a slow LLM stream (seconds) no longer means a slow-held DB
+        transaction (seconds) - the DB portion is two fast, separate writes.
+        """
+
+        # 1. Persist the user's message first.
+        self.chat_repo.create_message(
+            session.id,
+            MessageRole.USER,
+            content,
+            cited_chunk_ids=[],
+        )
+
+        # 2. Retrieve relevant chunks before streaming starts.
+        retrieved = self.retrieval.retrieve(
+            session.contract_id,
+            content,
+        )
+
+        if not retrieved:
+            answer = (
+                "This contract hasn't been processed yet, so I don't have any "
+                "content to search. Try running /process on it first."
+            )
+
+            cited_ids: list[uuid.UUID] = []
+
+            def _fallback_gen():
+                yield answer
+
+            def _finalize_fallback():
+                self.chat_repo.create_message(
+                    session.id,
+                    MessageRole.ASSISTANT,
+                    answer,
+                    cited_chunk_ids=cited_ids,
+                )
+
+            return _fallback_gen(), _finalize_fallback
+
+        context = "\n\n".join(
+            f"[Page {r.chunk.page_number}]\n{r.chunk.content}"
+            for r in retrieved
+        )
+
+        system_prompt = CHAT_SYSTEM_PROMPT_TEMPLATE.format(
+            context=context
+        )
+
+        history = self._build_history(session.id)
+
+        cited_ids = [r.chunk.id for r in retrieved]
+
+        # 3. Build the LLM token generator.
+        token_gen = self.llm.stream(
+            system_prompt=system_prompt,
+            messages=[
+                *history,
+                {"role": "user", "content": content},
+            ],
+        )
+
+        collected: list[str] = []
+
+        def _tracking_gen():
+            for token in token_gen:
+                collected.append(token)
+                yield token
+
+        def _finalize():
+            # Called after the stream completes.
+            full_answer = "".join(collected)
+
+            self.chat_repo.create_message(
+                session.id,
+                MessageRole.ASSISTANT,
+                full_answer,
+                cited_chunk_ids=cited_ids,
+            )
+
+        return _tracking_gen(), _finalize
+
+    def _build_history(
+        self,
+        session_id: uuid.UUID,
+    ) -> list[dict]:
+        messages = self.chat_repo.list_messages(session_id)[
+            -MAX_HISTORY_MESSAGES:
+        ]
+
+        return [
+            {
+                "role": m.role.value,
+                "content": m.content,
+            }
+            for m in messages
+        ]

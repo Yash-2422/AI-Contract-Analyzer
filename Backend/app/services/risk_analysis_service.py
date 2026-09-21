@@ -5,6 +5,12 @@ score.
 Uses structured JSON output from the LLM (not free-form prose) so findings
 can be stored as real rows with a category/severity, not just a paragraph
 of text - that's what lets the frontend filter/sort/highlight findings.
+
+Long contracts are analyzed in multiple context-sized batches rather than
+truncated to a single window - a single MAX_CONTEXT_CHARS cutoff silently
+drops everything after it, which for a multi-page contract can mean the
+most consequential clauses (often near the end - termination terms,
+addenda, signature-page conditions) never reach the model at all.
 """
 
 import json
@@ -34,14 +40,19 @@ Respond with ONLY a JSON array of findings, no other text, no markdown code \
 fences. Example format:
 [{{"category": "termination", "severity": "high", "title": "...", "explanation": "...", "suggestion": "...", "page_number": 2}}]
 
-If the contract text doesn't contain enough content to analyze meaningfully, \
-respond with an empty array: []
+Note: this may be one section of a longer contract - only some categories \
+may be present in this excerpt. If this excerpt doesn't contain enough \
+content to analyze meaningfully, respond with an empty array: []
 
 Contract text:
 {context}
 """
 
-MAX_CONTEXT_CHARS = 12000
+# Per-batch limit, NOT a total-document cap. A contract longer than this
+# is split into multiple batches (see _build_context_batches) and each
+# batch gets its own LLM call - this is what changed from a single-window
+# truncation, which silently dropped everything past the cutoff.
+MAX_CONTEXT_CHARS_PER_BATCH = 6000
 
 
 class RiskAnalysisService:
@@ -58,17 +69,21 @@ class RiskAnalysisService:
                 detail="This contract hasn't been processed yet. Call /process first.",
             )
 
-        context = self._build_context(chunks)
-        prompt = RISK_SYSTEM_PROMPT.format(
-            categories=", ".join(f'"{c.value}"' for c in ClauseCategory), context=context
-        )
+        batches = self._build_context_batches(chunks)
+        category_list = ", ".join(f'"{c.value}"' for c in ClauseCategory)
 
-        raw_response = self.llm.generate(system_prompt=prompt, messages=[{"role": "user", "content": "Analyze this contract."}])
-        parsed = self._parse_findings(raw_response)
+        all_parsed: list[dict] = []
+        for batch_context in batches:
+            prompt = RISK_SYSTEM_PROMPT.format(categories=category_list, context=batch_context)
+            raw_response = self.llm.generate(
+                system_prompt=prompt,
+                messages=[{"role": "user", "content": "Analyze this contract excerpt."}],
+            )
+            all_parsed.extend(self._parse_findings(raw_response))
 
-        findings = self.risk_repo.replace_findings(contract_id, parsed)
+        findings = self.risk_repo.replace_findings(contract_id, all_parsed)
         overall_score = self._compute_overall_score(findings)
-        return findings, overall_score
+        return findings, overall_score  
 
     def get_latest(self, contract_id: uuid.UUID) -> tuple[list, int]:
         findings = self.risk_repo.list_for_contract(contract_id)
@@ -77,16 +92,30 @@ class RiskAnalysisService:
 
     # --- Internal ---
 
-    def _build_context(self, chunks) -> str:
-        parts = []
-        total = 0
+    def _build_context_batches(self, chunks) -> list[str]:
+        """
+        Splits every chunk into one or more batches under the per-call char
+        budget, instead of truncating - a large contract gets fully analyzed
+        across several sequential LLM calls rather than losing its later
+        pages silently.
+        """
+        batches: list[str] = []
+        current_parts: list[str] = []
+        current_len = 0
+
         for chunk in chunks:
             piece = f"[Page {chunk.page_number}]\n{chunk.content}\n"
-            if total + len(piece) > MAX_CONTEXT_CHARS:
-                break
-            parts.append(piece)
-            total += len(piece)
-        return "\n".join(parts)
+            if current_len + len(piece) > MAX_CONTEXT_CHARS_PER_BATCH and current_parts:
+                batches.append("\n".join(current_parts))
+                current_parts = []
+                current_len = 0
+            current_parts.append(piece)
+            current_len += len(piece)
+
+        if current_parts:
+            batches.append("\n".join(current_parts))
+
+        return batches
 
     def _parse_findings(self, raw_response: str) -> list[dict]:
         """
