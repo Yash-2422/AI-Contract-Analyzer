@@ -153,7 +153,9 @@ The project demonstrates **modern software engineering practices**, including a 
 **Create account**
 ![Create account](screenshots/register.png)
 
+
 **Dashboard navigation**
+
 ![Sidebar navigation](screenshots/sidebar-nav.png)
 
 **Upload & manage contracts**
