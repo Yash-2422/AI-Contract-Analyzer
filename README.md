@@ -148,19 +148,19 @@ The project demonstrates **modern software engineering practices**, including a 
 # 📸 Screenshots
 
 **Landing page**
-![Landing page](Screenshots/landing.png)
+![Landing page](screenshots/landing.png)
 
 **Create account**
-![Create account](Screenshots/register.png)
+![Create account](screenshots/register.png)
 
 **Dashboard navigation**
-![Sidebar navigation](Screenshots/sidebar-nav.png)
+![Sidebar navigation](screenshots/sidebar-nav.png)
 
 **Upload & manage contracts**
-![Contracts upload](Screenshots/contracts-upload.png)
+![Contracts upload](screenshots/contracts-upload.png)
 
 **Compare contracts**
-![Compare contracts](Screenshots/compare.png)
+![Compare contracts](screenshots/compare.png)
 
 ---
 
