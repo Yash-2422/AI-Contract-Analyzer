@@ -34,9 +34,31 @@ jobs:
           cache: "pip"
           cache-dependency-path: Backend/requirements.txt
 
+      # Free up runner disk before installing ML deps. GitHub-hosted runners
+      # ship with several GB of preinstalled toolchains (.NET, Android SDK,
+      # GHC, CodeQL) that this job never touches - removing them buys back
+      # headroom without touching anything the build actually needs.
+      - name: Free disk space on runner
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h
+
+      # CI only: install CPU-only PyTorch from PyTorch's own CPU wheel index
+      # *before* requirements.txt is installed. The default PyPI `torch`
+      # wheel drags in several GB of nvidia-*/CUDA runtime packages that a
+      # CI runner never uses (and has no GPU for) - this is what was
+      # exhausting the runner's disk. Installing the CPU build first means
+      # pip sees torch's requirement already satisfied when it later
+      # processes requirements.txt (via sentence-transformers) and never
+      # reaches for the CUDA wheel. Local dev / production (GPU) installs
+      # are untouched since requirements.txt itself isn't modified.
+      - name: Install CPU-only PyTorch (CI only, avoids CUDA download)
+        run: |
+          pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
       - name: Install dependencies
         working-directory: Backend
-        run: pip install -r requirements.txt
+        run: pip install --no-cache-dir -r requirements.txt
 
       - name: Enable pgvector extension
         run: |
