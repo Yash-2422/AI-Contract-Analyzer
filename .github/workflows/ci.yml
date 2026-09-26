@@ -31,8 +31,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: Backend/requirements.txt
 
       # Free up runner disk before installing ML deps. GitHub-hosted runners
       # ship with several GB of preinstalled toolchains (.NET, Android SDK,
