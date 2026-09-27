@@ -22,4 +22,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Splits the React runtime into its own cacheable chunk, separate
+        // from app code. A deploy that only changes app logic won't force
+        // users to re-download React - this is purely a long-term caching
+        // win, not a change to what loads on first visit.
+        manualChunks: {
+          "react-vendor": ["react", "react-dom", "react-router-dom"],
+        },
+      },
+    },
+  },
 });

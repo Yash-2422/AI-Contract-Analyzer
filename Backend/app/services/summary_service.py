@@ -11,11 +11,11 @@ from app.repositories.summary_repository import SummaryRepository
 from app.services.llm_service import LLMService
 
 SUMMARY_SYSTEM_PROMPT = """You are a contract analysis assistant. Summarize the \
-following contract in plain English for someone with no legal background. \
-Cover: what the contract is for, who the parties are, key obligations, \
-payment terms if any, and the term/duration. Keep it under 300 words. \
-Base your summary ONLY on the text provided - do not invent details that \
-aren't in the contract text."""
+following contract in plain English for someone with no legal background, in \
+under 150 words. Cover: purpose, parties, key obligations, payment terms (if \
+any), and duration. Base the summary ONLY on the provided text - do not \
+invent details. Respond with ONLY the summary text - no headers, no preamble, \
+no markdown."""
 
 # Keeping this bounded protects both the LLM's context window and, more
 # importantly, keeps the summary grounded in the actual document rather

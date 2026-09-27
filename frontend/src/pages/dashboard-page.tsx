@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { FileDown, FileText, HardDrive, MessageSquareText, type LucideIcon } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { ContractStatusBadge } from "@/components/contracts/status-badge";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { formatBytes, formatDate } from "@/lib/format";
@@ -13,18 +16,40 @@ const RISK_BAR_COLORS: Record<keyof RiskDistribution, string> = {
   critical: "bg-risk-600",
 };
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+}) {
   return (
     <Card>
-      <CardContent className="p-5">
-        <p className="font-mono text-xs uppercase tracking-wide text-ink-400">{label}</p>
-        <p className="mt-1 font-display text-3xl text-ink-900">{value}</p>
+      <CardContent className="flex items-center gap-4 p-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="font-mono text-xs uppercase tracking-wide text-ink-400">{label}</p>
+          <p className="mt-1 font-display text-3xl text-ink-900">{value}</p>
+        </div>
       </CardContent>
     </Card>
   );
 }
 
 function RiskDistributionBar({ distribution }: { distribution: RiskDistribution }) {
+  // Same reveal-on-mount technique as risk-tab's ScoreRing: flip a flag
+  // one animation frame after mount so the CSS transition actually runs
+  // instead of jumping straight to its end state.
+  const [animated, setAnimated] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setAnimated(true));
+    return () => cancelAnimationFrame(id);
+  }, [distribution]);
+
   const total = distribution.low + distribution.medium + distribution.high + distribution.critical;
 
   if (total === 0) {
@@ -40,8 +65,8 @@ function RiskDistributionBar({ distribution }: { distribution: RiskDistribution 
           return (
             <div
               key={key}
-              className={RISK_BAR_COLORS[key]}
-              style={{ width: `${pct}%` }}
+              className={`${RISK_BAR_COLORS[key]} transition-[width] duration-700 ease-out motion-reduce:transition-none`}
+              style={{ width: animated ? `${pct}%` : "0%" }}
               title={`${key}: ${distribution[key]}`}
             />
           );
@@ -69,16 +94,16 @@ export function DashboardPage() {
         <h1 className="font-display text-3xl font-medium text-ink-900">Dashboard</h1>
         <p className="mt-1 text-ink-400">An overview of your contracts and AI activity.</p>
 
-        {isLoading && <p className="mt-8 text-sm text-ink-400">Loading...</p>}
+        {isLoading && <Spinner className="mt-8" label="Loading dashboard..." />}
         {isError && <p className="mt-8 text-sm text-risk-600">Couldn't load your dashboard.</p>}
 
         {data && (
           <>
             <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-              <StatCard label="Contracts" value={data.total_contracts} />
-              <StatCard label="Storage used" value={formatBytes(data.storage_used_bytes)} />
-              <StatCard label="Chat sessions" value={data.chat_sessions_count} />
-              <StatCard label="Reports generated" value={data.reports_generated_count} />
+              <StatCard icon={FileText} label="Contracts" value={data.total_contracts} />
+              <StatCard icon={HardDrive} label="Storage used" value={formatBytes(data.storage_used_bytes)} />
+              <StatCard icon={MessageSquareText} label="Chat sessions" value={data.chat_sessions_count} />
+              <StatCard icon={FileDown} label="Reports generated" value={data.reports_generated_count} />
             </div>
 
             <div className="mt-6 grid gap-6 md:grid-cols-2">

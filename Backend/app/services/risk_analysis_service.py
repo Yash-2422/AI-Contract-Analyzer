@@ -21,28 +21,26 @@ from fastapi import HTTPException, status
 
 from app.models.risk import SEVERITY_WEIGHTS, ClauseCategory, RiskSeverity
 from app.repositories.chunk_repository import ChunkRepository
-from app.repositories.risk_repository import RiskRepository
 from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
 RISK_SYSTEM_PROMPT = """You are a contract risk analysis assistant. Analyze the \
-contract text provided and identify every risky, one-sided, or notable clause. \
-For each finding, determine:
+contract text and identify risky, one-sided, or notable clauses. For each \
+finding, provide:
 - category: one of {categories}
-- severity: one of "low", "medium", "high", "critical"
-- title: a short (under 10 words) label for the finding
-- explanation: 1-3 sentences explaining the risk in plain English
-- suggestion: 1-2 sentences suggesting a safer alternative or negotiation point
-- page_number: the page number from the context where this clause appears, or null if unclear
+- severity: "low", "medium", "high", or "critical"
+- title: under 8 words
+- explanation: exactly one sentence, plain English
+- suggestion: exactly one sentence, a safer alternative or negotiation point
+- page_number: page number from context, or null if unclear
 
-Respond with ONLY a JSON array of findings, no other text, no markdown code \
-fences. Example format:
-[{{"category": "termination", "severity": "high", "title": "...", "explanation": "...", "suggestion": "...", "page_number": 2}}]
+Respond with ONLY a compact JSON array — no extra whitespace, no markdown \
+fences, no preamble. Example:
+[{{"category":"termination","severity":"high","title":"...","explanation":"...","suggestion":"...","page_number":2}}]
 
-Note: this may be one section of a longer contract - only some categories \
-may be present in this excerpt. If this excerpt doesn't contain enough \
-content to analyze meaningfully, respond with an empty array: []
+This may be one section of a longer contract - not every category needs to \
+appear. If this excerpt has nothing worth flagging, respond with: []
 
 Contract text:
 {context}

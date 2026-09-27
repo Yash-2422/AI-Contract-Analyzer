@@ -4,6 +4,8 @@ import { Search as SearchIcon } from "lucide-react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useSearch } from "@/hooks/use-search";
 
 export function SearchPage() {
@@ -33,10 +35,10 @@ export function SearchPage() {
           />
         </form>
 
-        {isLoading && <p className="mt-6 text-sm text-ink-400">Searching...</p>}
+        {isLoading && <Spinner className="mt-6" label="Searching..." />}
 
         {data && data.results.length === 0 && (
-          <p className="mt-6 text-sm text-ink-400">No matching clauses found.</p>
+          <EmptyState className="mt-6" icon={SearchIcon} title="No matching clauses found." />
         )}
 
         {data && data.results.length > 0 && (

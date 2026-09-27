@@ -1,6 +1,6 @@
 # 📄 AI Contract Analyzer — Understand Contracts in Minutes with AI
 
-AI Contract Analyzer is a **production-ready full-stack platform** built for anyone who has to read, review, or sign a contract. It reads PDF/DOCX contracts, flags risky clauses with plain-English explanations, answers questions grounded in the contract's actual text with page citations, compares two contracts clause by clause, and exports everything as clean PDF reports.
+AI Contract Analyzer is a **full-stack AI-powered platform** built for anyone who has to read, review, or sign a contract. It reads PDF/DOCX contracts, flags risky clauses with plain-English explanations, answers questions grounded in the contract's actual text with page citations, compares two contracts clause by clause, and exports everything as clean PDF reports.
 
 The project demonstrates **modern software engineering practices**, including a service/repository-layered FastAPI backend, retrieval-augmented generation (RAG) with pgvector, JWT authentication with token rotation, and a fully typed React + TypeScript frontend.
 
@@ -55,6 +55,7 @@ The project demonstrates **modern software engineering practices**, including a 
 - Page-Level Citations on Every Answer
 - Persistent Chat Sessions & Message History
 - Refuses to Guess When the Contract Doesn't Address a Question
+- Streaming Responses (SSE)
 
 ---
 
@@ -218,7 +219,6 @@ Supported uploads include:
 - httpOnly Cookie-Based Token Storage
 - Rate Limiting on Auth & AI Endpoints
 - S3/GCS Object Storage for Uploads
-- Streaming Chat Responses (SSE)
 - Multi-Language Contract Support
 - Clause-Level Redlining/Annotations in the UI
 - Team/Organization Accounts with Shared Contract Access
@@ -227,15 +227,119 @@ Supported uploads include:
 
 # 🤝 Contributors
 
-- **Your Name Here**
+- **Yash Agrawal** — [GitHub](https://github.com/Yash-2422)
 
 Feel free to contribute by opening issues or submitting pull requests.
 
 ---
 
+# 🚀 Getting Started
+
+## Prerequisites
+
+- [Docker](https://www.docker.com/) and Docker Compose (recommended)
+- For local development without Docker: Python 3.11, Node.js 22, PostgreSQL 16 with the `pgvector` extension, and [Ollama](https://ollama.com/)
+
+## Clone the repository
+
+```bash
+git clone https://github.com/Yash-2422/AI-Contract-Analyzer.git
+cd AI-Contract-Analyzer
+```
+
+## Run with Docker (recommended)
+
+**Windows (PowerShell):**
+
+```powershell
+Copy-Item backend\env.example backend\.env
+docker compose up --build
+```
+
+**macOS / Linux:**
+
+```bash
+cp backend/env.example backend/.env
+docker compose up --build
+```
+
+- Frontend: [http://localhost:5173](http://localhost:5173)
+- API: [http://localhost:8000](http://localhost:8000)
+- Swagger docs: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
+
+## Ollama
+
+Ollama runs on the host machine, not inside Docker. Pull the model this project uses and start the server before using any AI features:
+
+```bash
+ollama pull qwen2.5:7b-instruct
+ollama serve
+```
+
+## Environment configuration
+
+`backend/env.example` provides a starting point for the environment configuration. Additional settings and their defaults are defined in `app/core/config.py`.
+
+## Local development
+
+**Backend:**
+
+```bash
+cd backend
+python -m venv venv
+```
+
+Activate the virtual environment:
+
+```powershell
+# Windows PowerShell
+venv\Scripts\Activate.ps1
+```
+
+```bash
+# macOS / Linux
+source venv/bin/activate
+```
+
+Then:
+
+```powershell
+# Windows PowerShell
+pip install -r requirements.txt
+Copy-Item env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+```bash
+# macOS / Linux
+pip install -r requirements.txt
+cp env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+**Frontend:**
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend dev server proxies `/api` requests to `http://localhost:8000`.
+
+## Production deployment
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+---
+
 # 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+License information will be added before the first public release.
 
 ---
 
