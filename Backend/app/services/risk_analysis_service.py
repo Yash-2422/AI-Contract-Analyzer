@@ -21,6 +21,7 @@ from fastapi import HTTPException, status
 
 from app.models.risk import SEVERITY_WEIGHTS, ClauseCategory, RiskSeverity
 from app.repositories.chunk_repository import ChunkRepository
+from app.repositories.risk_repository import RiskRepository
 from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
