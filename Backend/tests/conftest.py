@@ -30,6 +30,13 @@ os.environ["DATABASE_URL"] = os.environ.get(
 
 os.environ.setdefault("UPLOAD_DIR", "/tmp/aca-test-storage")
 
+# Rate limiting is keyed by client IP (see app/core/limiter.py). Every
+# TestClient request shares one address, so leaving real limits on would
+# make tests that register/log in several times in a row (e.g.
+# ownership-isolation tests, which create a second "intruder" user) fail
+# on 429s unrelated to what they're actually checking.
+os.environ.setdefault("RATE_LIMIT_ENABLED", "False")
+
 import app.models  # noqa: E402
 from app.core.database import Base, engine
 from app.main import app as fastapi_app

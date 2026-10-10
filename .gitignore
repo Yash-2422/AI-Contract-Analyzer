@@ -6,3 +6,4 @@ dist/
 *.log
 # TypeScript build info
 *.tsbuildinfo
+/backups/

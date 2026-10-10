@@ -1,28 +1,45 @@
 # Production overrides. Use alongside the base file:
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
+# Requires a recent Docker Compose (2.24.4+) - uses the !reset and
+# !override tags. Compose APPENDS list values such as ports and volumes
+# across files, so a plain `ports: []` does not remove anything - the
+# tags below do.
+#
+# Secrets come from a project-root .env file on the server (never
+# committed). Compose refuses to start if a required one is missing.
+#
 # What changes from dev:
-#   - No source bind-mount on the backend (dev's live-reload volume) - the
-#     image is immutable, exactly what was built and tested ships to prod.
-#   - Ports are not published for db/redis - only the backend and frontend
-#     are reachable from outside the Docker network. The database has no
-#     business being internet-facing.
-#   - Backend runs multiple uvicorn workers instead of one.
-#   - Restart policy is "always" (not "unless-stopped") - a prod host
-#     rebooting should bring everything back up unconditionally.
+#   - db, redis and backend publish no host ports.
+#   - The backend's source bind-mount is replaced by a named volume for
+#     uploaded contracts.
+#   - DATABASE_URL and JWT_SECRET_KEY are set here from the root .env and
+#     override whatever Backend/.env contains (environment: beats env_file:).
+#   - Restart policy is "always".
 
 services:
   db:
     restart: always
-    ports: []  # internal-only; remove this line if you need external DB access
+    ports: !reset []
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the project-root .env file}"
+      POSTGRES_DB: "${POSTGRES_DB:-contract_analyzer}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
 
   redis:
     restart: always
-    ports: []
+    ports: !reset []
 
   backend:
     restart: always
-    volumes: []  # no bind mount - run exactly what's baked into the image
+    ports: !reset []
+    environment:
+      DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the project-root .env file}@db:5432/${POSTGRES_DB:-contract_analyzer}"
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in the project-root .env file}"
+    volumes: !override
+      - uploads_data:/app/storage/uploads
     command:
       [
         "uvicorn",
@@ -37,3 +54,6 @@ services:
 
   frontend:
     restart: always
+
+volumes:
+  uploads_data:

@@ -1,12 +1,13 @@
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.api.v1.dependencies import (
     get_comparison_service,
     get_current_user,
     get_document_service,
 )
+from app.core.limiter import limiter
 from app.models.user import User
 from app.schemas.comparison import CompareContractsRequest, ComparisonResponse
 from app.services.comparison_service import ComparisonService
@@ -18,7 +19,9 @@ router = APIRouter()
 @router.post(
     "/contracts/compare", response_model=ComparisonResponse, status_code=status.HTTP_201_CREATED
 )
+@limiter.limit("3/minute")
 def compare_contracts(
+    request: Request,
     data: CompareContractsRequest,
     current_user: User = Depends(get_current_user),
     document_service: DocumentService = Depends(get_document_service),

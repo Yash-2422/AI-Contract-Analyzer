@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # --- Rate limiting ---
+    # Disabled in tests (see tests/conftest.py) since TestClient requests
+    # all share one address and would trip shared limits for reasons
+    # unrelated to what a given test is checking.
+    RATE_LIMIT_ENABLED: bool = True
+
     # --- File storage ---
     UPLOAD_DIR: str = "storage/uploads"
     MAX_UPLOAD_SIZE_MB: int = 25

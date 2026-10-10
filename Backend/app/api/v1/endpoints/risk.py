@@ -1,12 +1,13 @@
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 
 from app.api.v1.dependencies import (
     get_current_user,
     get_document_service,
     get_risk_analysis_service,
 )
+from app.core.limiter import limiter
 from app.models.user import User
 from app.schemas.risk import RiskAnalysisResponse
 from app.services.document_service import DocumentService
@@ -16,7 +17,9 @@ router = APIRouter()
 
 
 @router.post("/contracts/{contract_id}/risk-analysis", response_model=RiskAnalysisResponse)
+@limiter.limit("3/minute")
 def analyze_risk(
+    request: Request,
     contract_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     document_service: DocumentService = Depends(get_document_service),

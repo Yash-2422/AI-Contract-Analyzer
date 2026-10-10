@@ -5,9 +5,10 @@ Thin by design: parse request -> call AuthService -> return response.
 No business logic lives in this file.
 """
 
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, Request, status, Response
 
 from app.api.v1.dependencies import get_auth_service, get_current_user
+from app.core.limiter import limiter
 from app.models.user import User
 from app.schemas.user import (
     ChangePasswordRequest,
@@ -25,14 +26,17 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/hour")
 def register(
+    request: Request,
     data: UserRegisterRequest, auth_service: AuthService = Depends(get_auth_service)
 ):
     return auth_service.register(data)
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: UserLoginRequest, response: Response, auth_service: AuthService = Depends(get_auth_service)):
+@limiter.limit("10/minute")
+def login(request: Request, data: UserLoginRequest, response: Response, auth_service: AuthService = Depends(get_auth_service)):
     tokens = auth_service.login(data)
     response.set_cookie(
         key="access_token",
@@ -45,8 +49,9 @@ def login(data: UserLoginRequest, response: Response, auth_service: AuthService 
 
 
 @router.post("/refresh", response_model=TokenResponse)
+@limiter.limit("20/minute")
 def refresh(
-    data: RefreshTokenRequest, response: Response, auth_service: AuthService = Depends(get_auth_service)
+    request: Request, data: RefreshTokenRequest, response: Response, auth_service: AuthService = Depends(get_auth_service)
 ):
     tokens = auth_service.refresh(data.refresh_token)
     # Update the cookie with the new rotated access token

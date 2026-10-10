@@ -10,7 +10,7 @@ chat history for a contract that isn't theirs.
 import json
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import StreamingResponse
 
 from app.api.v1.dependencies import (
@@ -19,6 +19,7 @@ from app.api.v1.dependencies import (
     get_document_service,
     get_summary_service,
 )
+from app.core.limiter import limiter
 from app.models.user import User
 from app.schemas.chat import (
     ChatMessageResponse,
@@ -42,7 +43,9 @@ router = APIRouter()
     response_model=SummaryResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/minute")
 def generate_summary(
+    request: Request,
     contract_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     document_service: DocumentService = Depends(get_document_service),
@@ -71,7 +74,9 @@ def get_summary(
     response_model=ChatSessionResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("10/minute")
 def create_chat_session(
+    request: Request,
     contract_id: uuid.UUID,
     data: CreateChatSessionRequest,
     current_user: User = Depends(get_current_user),
@@ -101,7 +106,9 @@ def list_chat_sessions(
     response_model=ChatMessageResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/minute")
 def send_message(
+    request: Request,
     session_id: uuid.UUID,
     data: SendMessageRequest,
     current_user: User = Depends(get_current_user),
@@ -139,7 +146,9 @@ def list_messages(
 
 
 @router.post("/chat/sessions/{session_id}/messages/stream")
+@limiter.limit("5/minute")
 def stream_message(
+    request: Request,
     session_id: uuid.UUID,
     data: SendMessageRequest,
     current_user: User = Depends(get_current_user),
