@@ -49,8 +49,18 @@ class Settings(BaseSettings):
     REPORTS_DIR: str = "storage/reports"
 
     # --- AI / LLM (wired up in Phase 5) ---
+    # LLM_PROVIDER switches the text-generation backend:
+    #   "ollama" -> local Ollama server (default, used on your laptop)
+    #   "groq"   -> Groq hosted API (used for the free public deployment)
+    LLM_PROVIDER: str = "ollama"
+
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     LLM_MODEL_NAME: str = "qwen2.5:7b-instruct"
+
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL_NAME: str = "llama-3.3-70b-versatile"
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
+
     EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
 
     model_config = SettingsConfigDict(
