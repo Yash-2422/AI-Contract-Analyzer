@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     LLM_MODEL_NAME: str = "qwen2.5:7b-instruct"
 
     GROQ_API_KEY: str = ""
-    GROQ_MODEL_NAME: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL_NAME: str = "openai/gpt-oss-120b"
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
 
     EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"

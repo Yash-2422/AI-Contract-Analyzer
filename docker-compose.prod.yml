@@ -9,10 +9,18 @@
 # Secrets come from a project-root .env file on the server (never
 # committed). Compose refuses to start if a required one is missing.
 #
+# Server prerequisites for the ollama service (GPU):
+#   - NVIDIA driver installed on the host
+#   - NVIDIA Container Toolkit installed and configured for Docker
+#   Verify with:
+#     docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi
+#
 # What changes from dev:
-#   - db, redis and backend publish no host ports.
+#   - db, redis, ollama and backend publish no host ports.
 #   - The backend's source bind-mount is replaced by a named volume for
 #     uploaded contracts.
+#   - Ollama runs as a compose service with GPU access; the backend
+#     reaches it at http://ollama:11434 (set below, overrides Backend/.env).
 #   - DATABASE_URL and JWT_SECRET_KEY are set here from the root .env and
 #     override whatever Backend/.env contains (environment: beats env_file:).
 #   - Restart policy is "always".
@@ -32,12 +40,43 @@ services:
     restart: always
     ports: !reset []
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: contract-analyzer-ollama
+    restart: always
+    environment:
+      # Same settings that were used on the local machine.
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: "q8_0"
+      # Keep the model loaded between requests so the first call after a
+      # quiet period doesn't pay the full model-load time again.
+      OLLAMA_KEEP_ALIVE: "24h"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
   backend:
     restart: always
     ports: !reset []
     environment:
       DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the project-root .env file}@db:5432/${POSTGRES_DB:-contract_analyzer}"
       JWT_SECRET_KEY: "${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in the project-root .env file}"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+    depends_on:
+      ollama:
+        condition: service_healthy
     volumes: !override
       - uploads_data:/app/storage/uploads
     command:
@@ -57,3 +96,4 @@ services:
 
 volumes:
   uploads_data:
+  ollama_data:
