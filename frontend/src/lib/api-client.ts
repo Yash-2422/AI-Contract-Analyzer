@@ -31,6 +31,31 @@ async function refreshAccessToken(): Promise<string> {
   }
 }
 
+function getOrRefreshAccessToken(): Promise<string> {
+  refreshPromise ??= refreshAccessToken().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
+apiClient.interceptors.request.use(async (config) => {
+  const endpoint = config.url ?? "";
+  const isAuthMutation = /\/auth\/(login|register|refresh|logout)(?:$|\?)/.test(endpoint);
+  let { accessToken, refreshToken } = useAuthStore.getState();
+
+  // Access tokens remain memory-only. Restore one from the persisted refresh
+  // token before sending the first protected request after a page reload.
+  if (!accessToken && refreshToken && !isAuthMutation) {
+    accessToken = await getOrRefreshAccessToken();
+  }
+
+  if (accessToken) {
+    config.headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -38,22 +63,21 @@ apiClient.interceptors.response.use(
       | (InternalAxiosRequestConfig & { _retry?: boolean })
       | undefined;
 
-    const isAuthEndpoint = originalRequest?.url?.includes("/auth/");
+    const isAuthEndpoint = /\/auth\/(login|register|refresh|logout)(?:$|\?)/.test(
+      originalRequest?.url ?? "",
+    );
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
       try {
-        refreshPromise ??= refreshAccessToken().finally(() => {
-          refreshPromise = null;
-        });
-        const newToken = await refreshPromise;
+        const newToken = await getOrRefreshAccessToken();
 
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return apiClient(originalRequest);
       } catch {
-        
-        window.location.href = "/login";
+        // refreshAccessToken clears the auth store. ProtectedRoute observes
+        // that state change and redirects without forcing a full-page reload.
         return Promise.reject(error);
       }
     }

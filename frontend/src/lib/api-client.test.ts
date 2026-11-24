@@ -42,10 +42,37 @@ describe("apiClient", () => {
     await apiClient.get("/contracts");
   });
 
+  it("attaches the in-memory access token to authenticated requests", async () => {
+    useAuthStore.getState().setTokens("access-token", "refresh-token");
+    mock.onGet("/contracts").reply((config) => {
+      expect(config.headers?.Authorization).toBe("Bearer access-token");
+      return [200, {}];
+    });
+
+    await apiClient.get("/contracts");
+  });
+
+  it("refreshes before the first authenticated request after a page reload", async () => {
+    useAuthStore.getState().setSession("persisted-refresh-token", sampleUser);
+    rawAxiosMock.onPost(/\/auth\/refresh$/).reply(200, {
+      access_token: "restored-access-token",
+      refresh_token: "rotated-refresh-token",
+      token_type: "bearer",
+    });
+    mock.onGet("/contracts").reply((config) => {
+      expect(config.headers?.Authorization).toBe("Bearer restored-access-token");
+      return [200, {}];
+    });
+
+    await apiClient.get("/contracts");
+
+    expect(rawAxiosMock.history.post).toHaveLength(1);
+    expect(useAuthStore.getState().refreshToken).toBe("rotated-refresh-token");
+  });
+
   it("transparently refreshes on a 401 and retries the original request", async () => {
-    useAuthStore
-      .getState()
-      .setSession("valid-refresh-token", sampleUser);
+    useAuthStore.getState().setTokens("expired-access-token", "valid-refresh-token");
+    useAuthStore.getState().setSession("valid-refresh-token", sampleUser);
 
     let firstAttempt = true;
 
@@ -86,9 +113,8 @@ describe("apiClient", () => {
   });
 
   it("clears the session and does not retry when refresh itself fails", async () => {
-    useAuthStore
-      .getState()
-      .setSession("dead-refresh-token", sampleUser);
+    useAuthStore.getState().setTokens("expired-access-token", "dead-refresh-token");
+    useAuthStore.getState().setSession("dead-refresh-token", sampleUser);
 
     mock.onGet("/contracts").reply(401, {
       error: "unauthorized",

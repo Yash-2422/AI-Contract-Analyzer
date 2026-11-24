@@ -75,12 +75,18 @@ describe("LoginPage", () => {
       refresh_token: "refresh-123",
       token_type: "bearer",
     });
-    mock.onGet("/auth/me").reply(200, {
-      id: "user-1",
-      email: "test@example.com",
-      full_name: "Test User",
-      is_active: true,
-      created_at: "2026-01-01T00:00:00Z",
+    mock.onGet("/auth/me").reply((config) => {
+      expect(config.headers?.Authorization).toBe("Bearer access-123");
+      return [
+        200,
+        {
+          id: "user-1",
+          email: "test@example.com",
+          full_name: "Test User",
+          is_active: true,
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      ];
     });
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
