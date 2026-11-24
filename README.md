@@ -345,9 +345,11 @@ Compose builds the internal PostgreSQL URL. Do not set the application role to
 the administrator role.
 
 The one-shot `migrate` service runs as the database administrator/migration
-owner. It creates the application role if absent, rejects an existing role with
-elevated attributes or role memberships, sets default table/sequence grants,
-runs Alembic, grants DML on application tables and sequence access, and removes
+owner. It creates an absent application role using only `LOGIN` and its
+password, relying on PostgreSQL's safe defaults for all privilege flags. It
+rejects an existing role with elevated attributes or any role memberships
+without trying to change them. It sets default table/sequence grants, runs
+Alembic, grants DML on application tables and sequence access, and removes
 application access to `alembic_version`. It does not rely on
 `docker-entrypoint-initdb.d`, so it can provision grants on an existing volume
 without recreating the volume or touching user records. Run it before starting
@@ -360,14 +362,13 @@ Verify the running API's role without printing its connection URL:
 docker compose --env-file .env -f docker-compose.yml -f docker-compose.prod.yml exec backend python scripts/verify_application_role.py
 ```
 
-For managed PostgreSQL, create the application role using the provider's SQL
-console or role-management UI, then configure `APP_DATABASE_URL` with that
-role's connection string and `MIGRATION_DATABASE_URL` with the database owner
-or migration administrator connection string. URL-encode credentials and
-require TLS where the provider supports it. The migration role must be able to
-run the existing Alembic migrations, grant table/sequence privileges, and use
-the `vector` extension. A managed database that does not permit role creation
-must have the application role provisioned manually before migrations.
+For managed PostgreSQL, configure `APP_DATABASE_URL` with the restricted
+application role and `MIGRATION_DATABASE_URL` with the database owner or
+migration administrator connection string. URL-encode credentials and require
+TLS where the provider supports it. The migration role must be able to run the
+existing Alembic migrations, grant table/sequence privileges, and use the
+`vector` extension. A managed database that does not permit role creation must
+have the application role provisioned manually before migrations.
 Use `docker-compose.managed-db.yml` as the third Compose file so the local
 PostgreSQL service is not started:
 
@@ -377,22 +378,28 @@ docker compose --env-file .env -f docker-compose.yml -f docker-compose.prod.yml 
 ```
 
 Set `POSTGRES_APP_USER` and `POSTGRES_APP_PASSWORD` in the migration job's
-secret environment as well. If the provider will not allow the migration role
-to create roles, create the application role first with the attributes below;
-the migration job verifies its attributes and applies the object grants.
+secret environment as well. Neon roles created through the Console, API, or
+default CLI flow are members of `neon_superuser`; the migration job will reject
+such a role and will not try to demote it or revoke Neon-managed membership. If
+the existing app role is privileged, leave that role and password untouched,
+choose a new unused `POSTGRES_APP_USER` name, and reuse the existing
+`POSTGRES_APP_PASSWORD` value for the new runtime role. The database and its
+data remain unchanged. The migration job can create that new role through SQL
+when run as a Neon owner role. Alternatively, create the role in the Neon SQL
+Editor (not the role UI/API) with the same password; SQL-created roles do not
+join `neon_superuser`.
 
 Example least-privilege role setup (replace identifiers/password in the
 provider console; do not put the literal example password into deployment):
 
 ```sql
-CREATE ROLE contract_app LOGIN PASSWORD 'replace-with-a-strong-url-safe-secret'
-    NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
-GRANT CONNECT ON DATABASE contract_analyzer TO contract_app;
-GRANT USAGE ON SCHEMA public TO contract_app;
+CREATE ROLE contract_app_runtime LOGIN PASSWORD 'replace-with-a-strong-url-safe-secret';
+GRANT CONNECT ON DATABASE contract_analyzer TO contract_app_runtime;
+GRANT USAGE ON SCHEMA public TO contract_app_runtime;
 ALTER DEFAULT PRIVILEGES FOR ROLE migration_owner IN SCHEMA public
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO contract_app;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO contract_app_runtime;
 ALTER DEFAULT PRIVILEGES FOR ROLE migration_owner IN SCHEMA public
-    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO contract_app;
+    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO contract_app_runtime;
 ```
 
 Replace `migration_owner` with the role that runs Alembic. Run migrations as

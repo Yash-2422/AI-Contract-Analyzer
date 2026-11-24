@@ -29,21 +29,34 @@ def _configure_application_role(engine, app_user: str, app_password: str) -> Non
 
             cursor.execute(
                 "SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, "
-                "rolreplication, rolinherit, rolbypassrls "
+                "rolreplication, rolbypassrls "
                 "FROM pg_roles WHERE rolname = %s",
                 (app_user,),
             )
             role = cursor.fetchone()
             if role is None:
+                # PostgreSQL defaults newly-created roles to NOLOGIN,
+                # NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION, and
+                # NOBYPASSRLS. Keep the CREATE statement minimal: managed
+                # providers such as Neon may reject attempts to set
+                # provider-controlled role attributes explicitly.
                 cursor.execute(
                     sql.SQL(
-                        "CREATE ROLE {} WITH LOGIN PASSWORD {} NOSUPERUSER "
-                        "NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT"
+                        "CREATE ROLE {} WITH LOGIN PASSWORD {}"
                     ).format(sql.Identifier(app_user), sql.Literal(app_password))
                 )
-            elif not role[0] or any(role[1:]):
+                cursor.execute(
+                    "SELECT rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, "
+                    "rolreplication, rolbypassrls "
+                    "FROM pg_roles WHERE rolname = %s",
+                    (app_user,),
+                )
+                role = cursor.fetchone()
+
+            if role is None or not role[0] or any(role[1:]):
                 raise ValueError(
-                    "The existing application role must be LOGIN, non-privileged, and NOINHERIT"
+                    "The application role is missing LOGIN or has elevated role attributes. "
+                    "It was not modified; choose a new SQL-created application role."
                 )
 
             cursor.execute(
@@ -52,7 +65,23 @@ def _configure_application_role(engine, app_user: str, app_password: str) -> Non
                 (app_user,),
             )
             if cursor.fetchone()[0]:
-                raise ValueError("The application role must not inherit or assume other roles")
+                raise ValueError(
+                    "The application role has role memberships and was not modified. "
+                    "Use a new SQL-created role with no memberships; Neon Console/API "
+                    "roles inherit neon_superuser privileges."
+                )
+
+            cursor.execute(
+                "SELECT has_database_privilege(%s, %s, 'CREATE'), "
+                "has_schema_privilege(%s, 'public', 'CREATE')",
+                (app_user, database_name, app_user),
+            )
+            can_create_database, can_create_schema = cursor.fetchone()
+            if can_create_database or can_create_schema:
+                raise ValueError(
+                    "The application role already has database or schema CREATE "
+                    "privileges; it was not modified."
+                )
 
             cursor.execute(
                 sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(
@@ -135,8 +164,11 @@ def main() -> int:
         _grant_existing_application_privileges(engine, app_user)
         print("Database migrations and application-role grants completed.")
         return 0
+    except ValueError as exc:
+        print(f"Database validation failed: {exc}", file=sys.stderr)
+        return 1
     except Exception as exc:
-        # Avoid printing driver exceptions: they can include the connection URL.
+        # Avoid printing driver exceptions because they may contain credentials.
         print(f"Database migration setup failed ({type(exc).__name__}).", file=sys.stderr)
         return 1
     finally:

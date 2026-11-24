@@ -23,7 +23,7 @@ def main() -> int:
                     SELECT current_user = :expected_role,
                            r.rolcanlogin,
                            NOT r.rolsuper AND NOT r.rolcreatedb AND NOT r.rolcreaterole
-                               AND NOT r.rolreplication AND NOT r.rolbypassrls AND NOT r.rolinherit,
+                               AND NOT r.rolreplication AND NOT r.rolbypassrls,
                            has_database_privilege(current_user, current_database(), 'CONNECT'),
                            NOT has_database_privilege(current_user, current_database(), 'CREATE'),
                            has_schema_privilege(current_user, 'public', 'USAGE'),
@@ -33,6 +33,10 @@ def main() -> int:
                            NOT EXISTS (
                                SELECT 1 FROM pg_auth_members
                                WHERE member = (SELECT oid FROM pg_roles WHERE rolname = current_user)
+                           ),
+                           NOT COALESCE(
+                               pg_has_role(current_user, to_regrole('neon_superuser'), 'MEMBER'),
+                               false
                            )
                     FROM pg_roles r WHERE r.rolname = current_user
                     """
@@ -46,6 +50,7 @@ def main() -> int:
                 ("schema_usage_without_create", role[5] and role[6]),
                 ("pgvector_type_usage", role[7]),
                 ("no_role_memberships", role[8]),
+                ("not_neon_superuser_member", role[9]),
             )
 
             table_checks = connection.execute(
