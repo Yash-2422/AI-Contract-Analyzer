@@ -8,6 +8,7 @@ No business logic lives in this file.
 from fastapi import APIRouter, Depends, Request, status, Response
 
 from app.api.v1.dependencies import get_auth_service, get_current_user
+from app.core.config import settings
 from app.core.limiter import limiter
 from app.models.user import User
 from app.schemas.user import (
@@ -24,6 +25,19 @@ from app.services.auth_service import AuthService
 
 router = APIRouter()
 
+_AUTH_COOKIE_NAME = "access_token"
+
+
+def _auth_cookie_options() -> dict[str, str | bool]:
+    """Keep cookie creation and deletion attributes in sync."""
+    return {
+        "key": _AUTH_COOKIE_NAME,
+        "httponly": True,
+        "samesite": "lax",
+        "secure": settings.ENVIRONMENT.lower() == "production",
+        "path": "/",
+    }
+
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/hour")
@@ -38,13 +52,7 @@ def register(
 @limiter.limit("10/minute")
 def login(request: Request, data: UserLoginRequest, response: Response, auth_service: AuthService = Depends(get_auth_service)):
     tokens = auth_service.login(data)
-    response.set_cookie(
-        key="access_token",
-        value=tokens.access_token,
-        httponly=True,
-        samesite="lax",
-        secure=False 
-    )
+    response.set_cookie(value=tokens.access_token, **_auth_cookie_options())
     return tokens
 
 
@@ -55,13 +63,7 @@ def refresh(
 ):
     tokens = auth_service.refresh(data.refresh_token)
     # Update the cookie with the new rotated access token
-    response.set_cookie(
-        key="access_token",
-        value=tokens.access_token,
-        httponly=True,
-        samesite="lax",
-        secure=False
-    )
+    response.set_cookie(value=tokens.access_token, **_auth_cookie_options())
     return tokens
 
 
@@ -71,7 +73,7 @@ def logout(
 ):
     auth_service.logout(data.refresh_token)
     # Delete the cookie from the browser
-    response.delete_cookie("access_token")
+    response.delete_cookie(**_auth_cookie_options())
     return MessageResponse(message="Logged out successfully.")
 
 

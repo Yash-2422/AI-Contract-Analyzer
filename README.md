@@ -305,7 +305,7 @@ Then:
 
 ```powershell
 # Windows PowerShell
-pip install -r requirements.txt
+pip install -r requirements-local.txt
 Copy-Item env.example .env
 alembic upgrade head
 uvicorn app.main:app --reload
@@ -313,7 +313,7 @@ uvicorn app.main:app --reload
 
 ```bash
 # macOS / Linux
-pip install -r requirements.txt
+pip install -r requirements-local.txt
 cp env.example .env
 alembic upgrade head
 uvicorn app.main:app --reload
@@ -332,8 +332,92 @@ The frontend dev server proxies `/api` requests to `http://localhost:8000`.
 ## Production deployment
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.prod.yml up -d db
+docker compose --profile migration --env-file .env -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.prod.yml up -d --build backend frontend
 ```
+
+The backend connects as `POSTGRES_APP_USER` (default `contract_app`) using
+`POSTGRES_APP_PASSWORD`. Keep the database administrator credentials in
+`POSTGRES_USER` and `POSTGRES_PASSWORD`; the API container receives only the
+application connection URL. Use a strong URL-safe application password when
+Compose builds the internal PostgreSQL URL. Do not set the application role to
+the administrator role.
+
+The one-shot `migrate` service runs as the database administrator/migration
+owner. It creates the application role if absent, rejects an existing role with
+elevated attributes or role memberships, sets default table/sequence grants,
+runs Alembic, grants DML on application tables and sequence access, and removes
+application access to `alembic_version`. It does not rely on
+`docker-entrypoint-initdb.d`, so it can provision grants on an existing volume
+without recreating the volume or touching user records. Run it before starting
+or restarting the API after changing the runtime database role. The existing
+`DATABASE_URL` used by Alembic is supplied only to the migration container.
+
+Verify the running API's role without printing its connection URL:
+
+```bash
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.prod.yml exec backend python scripts/verify_application_role.py
+```
+
+For managed PostgreSQL, create the application role using the provider's SQL
+console or role-management UI, then configure `APP_DATABASE_URL` with that
+role's connection string and `MIGRATION_DATABASE_URL` with the database owner
+or migration administrator connection string. URL-encode credentials and
+require TLS where the provider supports it. The migration role must be able to
+run the existing Alembic migrations, grant table/sequence privileges, and use
+the `vector` extension. A managed database that does not permit role creation
+must have the application role provisioned manually before migrations.
+Use `docker-compose.managed-db.yml` as the third Compose file so the local
+PostgreSQL service is not started:
+
+```bash
+docker compose --profile migration --env-file .env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.managed-db.yml run --rm migrate
+docker compose --env-file .env -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.managed-db.yml up -d --build backend frontend
+```
+
+Set `POSTGRES_APP_USER` and `POSTGRES_APP_PASSWORD` in the migration job's
+secret environment as well. If the provider will not allow the migration role
+to create roles, create the application role first with the attributes below;
+the migration job verifies its attributes and applies the object grants.
+
+Example least-privilege role setup (replace identifiers/password in the
+provider console; do not put the literal example password into deployment):
+
+```sql
+CREATE ROLE contract_app LOGIN PASSWORD 'replace-with-a-strong-url-safe-secret'
+    NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;
+GRANT CONNECT ON DATABASE contract_analyzer TO contract_app;
+GRANT USAGE ON SCHEMA public TO contract_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE migration_owner IN SCHEMA public
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO contract_app;
+ALTER DEFAULT PRIVILEGES FOR ROLE migration_owner IN SCHEMA public
+    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO contract_app;
+```
+
+Replace `migration_owner` with the role that runs Alembic. Run migrations as
+that owner so its default privileges apply to future application tables. The
+migration job grants access to existing application tables, sequences, and
+the pgvector type after applying migrations; it deliberately withholds access
+to `alembic_version`.
+
+The production Compose file reads `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, and
+`GEMINI_API_KEY` from the project-root `.env` file. The frontend and API use a
+same-origin Nginx proxy by default, so `ALLOWED_ORIGINS` may be left empty. If
+the frontend is hosted on a separate domain, set `ALLOWED_ORIGINS` to a
+comma-separated list of exact browser origins, including the scheme and any
+non-default port, for example:
+
+```dotenv
+ALLOWED_ORIGINS=https://contracts.example.com,https://admin.example.com
+```
+
+Do not include URL paths or use `*` when credentialed browser requests are
+enabled. Production authentication cookies are marked `Secure`; serve the
+application over HTTPS. Local development keeps cookies compatible with HTTP.
+The current `SameSite=Lax` cookie policy is intended for same-site deployments;
+a frontend on a separate site may need a coordinated cookie and CSRF design in
+addition to this CORS allowlist. Prefer the same-origin Nginx proxy when possible.
 
 ---
 

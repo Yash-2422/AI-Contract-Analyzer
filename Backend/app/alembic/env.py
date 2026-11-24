@@ -23,8 +23,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Use the app's own DATABASE_URL (from .env via pydantic-settings) instead
-# of a hardcoded value in alembic.ini, so there's a single source of truth.
+# Use the DATABASE_URL provided to the one-shot migration service. Production
+# supplies its migration/admin URL here; the long-running API receives only
+# the least-privilege application URL.
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 target_metadata = Base.metadata

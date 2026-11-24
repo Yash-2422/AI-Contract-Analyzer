@@ -53,7 +53,7 @@ class ProcessingService:
             for page in pages:
                 if page.needs_ocr:
                     logger.info(
-                        "Contract %s page %s needs OCR, running PaddleOCR",
+                        "Contract %s page %s needs OCR",
                         contract.id,
                         page.page_number,
                     )

@@ -1,5 +1,38 @@
 """Tests for Phase 2 auth: register, login, refresh rotation, profile."""
 
+from http.cookies import SimpleCookie
+
+from app.core.config import settings
+
+
+def _auth_cookie(response):
+    cookies = SimpleCookie()
+    cookies.load(response.headers["set-cookie"])
+    return cookies["access_token"]
+
+
+def _register_and_login(client):
+    email = "cookie-test@example.com"
+    password = "supersecret123"
+    client.post(
+        "/api/v1/auth/register",
+        json={"email": email, "password": password, "full_name": "Cookie Test"},
+    )
+    login = client.post(
+        "/api/v1/auth/login", json={"email": email, "password": password}
+    )
+    return login
+
+
+def _assert_cookie_attributes(cookie, *, secure, session=True):
+    assert bool(cookie["secure"]) is secure
+    assert bool(cookie["httponly"])
+    assert cookie["samesite"] == "lax"
+    assert cookie["path"] == "/"
+    if session:
+        assert cookie["max-age"] == ""
+        assert cookie["expires"] == ""
+
 
 def test_register_creates_user(client):
     response = client.post(
@@ -41,6 +74,51 @@ def test_login_wrong_password_rejected(client):
 def test_login_returns_tokens(registered_user):
     _, user = registered_user
     assert user["email"].startswith("test-")
+
+
+def test_production_login_and_refresh_cookies_are_secure(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+
+    login = _register_and_login(client)
+    assert login.status_code == 200
+    _assert_cookie_attributes(_auth_cookie(login), secure=True)
+
+    refreshed = client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": login.json()["refresh_token"]},
+    )
+    assert refreshed.status_code == 200
+    _assert_cookie_attributes(_auth_cookie(refreshed), secure=True)
+
+    logout = client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": refreshed.json()["refresh_token"]},
+    )
+    assert logout.status_code == 200
+    deleted_cookie = _auth_cookie(logout)
+    _assert_cookie_attributes(deleted_cookie, secure=True, session=False)
+    assert deleted_cookie.value == ""
+    assert deleted_cookie["max-age"] == "0"
+    assert deleted_cookie["expires"]
+
+
+def test_development_cookie_and_logout_deletion_keep_matching_attributes(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
+
+    login = _register_and_login(client)
+    assert login.status_code == 200
+    _assert_cookie_attributes(_auth_cookie(login), secure=False)
+
+    logout = client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": login.json()["refresh_token"]},
+    )
+    assert logout.status_code == 200
+    deleted_cookie = _auth_cookie(logout)
+    _assert_cookie_attributes(deleted_cookie, secure=False, session=False)
+    assert deleted_cookie.value == ""
+    assert deleted_cookie["max-age"] == "0"
+    assert deleted_cookie["expires"]
 
 
 def test_me_requires_auth(client):

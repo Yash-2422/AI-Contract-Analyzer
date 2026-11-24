@@ -66,13 +66,19 @@ def _clean_tables():
 
 
 @pytest.fixture(autouse=True)
-def _fake_ai_models(monkeypatch):
+def _fake_ai_models(monkeypatch, request):
     """
     Fakes only the two things that need internet access to real model
     registries (Hugging Face for embeddings, Ollama for the LLM) - every
     other code path (retrieval's pgvector query, prompt construction,
     parsing, ownership checks) runs for real against the fake outputs.
     """
+
+    # Unit tests in test_embedding_service.py exercise the provider dispatch
+    # and local BGE path directly. Replacing embed() here bypasses both paths
+    # and makes those tests observe the fixture's hash vectors instead.
+    if request.node.path.name == "test_embedding_service.py":
+        return
 
     def fake_embed(self, texts):
         def vec(t):

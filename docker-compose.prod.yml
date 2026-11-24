@@ -1,29 +1,7 @@
-# Production overrides. Use alongside the base file:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-#
-# Requires a recent Docker Compose (2.24.4+) - uses the !reset and
-# !override tags. Compose APPENDS list values such as ports and volumes
-# across files, so a plain `ports: []` does not remove anything - the
-# tags below do.
-#
-# Secrets come from a project-root .env file on the server (never
-# committed). Compose refuses to start if a required one is missing.
-#
-# Server prerequisites for the ollama service (GPU):
-#   - NVIDIA driver installed on the host
-#   - NVIDIA Container Toolkit installed and configured for Docker
-#   Verify with:
-#     docker run --rm --gpus all nvidia/cuda:12.4.1-base-ubuntu22.04 nvidia-smi
-#
-# What changes from dev:
-#   - db, redis, ollama and backend publish no host ports.
-#   - The backend's source bind-mount is replaced by a named volume for
-#     uploaded contracts.
-#   - Ollama runs as a compose service with GPU access; the backend
-#     reaches it at http://ollama:11434 (set below, overrides Backend/.env).
-#   - DATABASE_URL and JWT_SECRET_KEY are set here from the root .env and
-#     override whatever Backend/.env contains (environment: beats env_file:).
-#   - Restart policy is "always".
+# CPU-only production overrides for the existing Docker Compose deployment.
+# Requires Docker Compose 2.24.4+ for the !reset and !override tags.
+# Required secrets are read from a project-root .env file and are never
+# written into this file.
 
 services:
   db:
@@ -31,51 +9,41 @@ services:
     ports: !reset []
     environment:
       POSTGRES_USER: "${POSTGRES_USER:-postgres}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the project-root .env file}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-}"
       POSTGRES_DB: "${POSTGRES_DB:-contract_analyzer}"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
 
+  # Redis is unused by the current application. Keep the local service
+  # definition available, but don't start it in the production profile.
   redis:
+    profiles:
+      - local-only
     restart: always
     ports: !reset []
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: contract-analyzer-ollama
-    restart: always
-    environment:
-      # Same settings that were used on the local machine.
-      OLLAMA_FLASH_ATTENTION: "1"
-      OLLAMA_KV_CACHE_TYPE: "q8_0"
-      # Keep the model loaded between requests so the first call after a
-      # quiet period doesn't pay the full model-load time again.
-      OLLAMA_KEEP_ALIVE: "24h"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
 
   backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
     restart: always
     ports: !reset []
     environment:
-      DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the project-root .env file}@db:5432/${POSTGRES_DB:-contract_analyzer}"
+      DATABASE_URL: "${APP_DATABASE_URL:-postgresql+psycopg2://${POSTGRES_APP_USER:-contract_app}:${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in the project-root .env file}@db:5432/${POSTGRES_DB:-contract_analyzer}}"
+      POSTGRES_APP_USER: "${POSTGRES_APP_USER:-contract_app}"
       JWT_SECRET_KEY: "${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in the project-root .env file}"
-      OLLAMA_BASE_URL: "http://ollama:11434"
-    depends_on:
-      ollama:
+      ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-}"
+      ENVIRONMENT: production
+      DEBUG: "False"
+      LLM_PROVIDER: gemini
+      OCR_PROVIDER: gemini
+      EMBEDDING_PROVIDER: gemini
+      GEMINI_API_KEY: "${GEMINI_API_KEY:?Set GEMINI_API_KEY in the project-root .env file}"
+      GEMINI_MODEL_NAME: "${GEMINI_MODEL_NAME:-gemini-3.1-flash-lite}"
+      GEMINI_BASE_URL: "${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com/v1beta/openai}"
+      GEMINI_EMBEDDING_MODEL_NAME: "${GEMINI_EMBEDDING_MODEL_NAME:-gemini-embedding-2}"
+    depends_on: !override
+      db:
         condition: service_healthy
     volumes: !override
       - uploads_data:/app/storage/uploads
@@ -91,9 +59,26 @@ services:
         "1",
       ]
 
+  migrate:
+    profiles: ["migration"]
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    restart: "no"
+    environment:
+      DATABASE_URL: "${MIGRATION_DATABASE_URL:-postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-}@db:5432/${POSTGRES_DB:-contract_analyzer}}"
+      POSTGRES_APP_USER: "${POSTGRES_APP_USER:-contract_app}"
+      POSTGRES_APP_PASSWORD: "${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in the project-root .env file}"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "scripts/run_migrations.py"]
+
   frontend:
     restart: always
+    # Set FRONTEND_HOST_PORT in the project-root .env to change the host port.
+    ports: !override
+      - "${FRONTEND_HOST_PORT:-8080}:80"
 
 volumes:
   uploads_data:
-  ollama_data:

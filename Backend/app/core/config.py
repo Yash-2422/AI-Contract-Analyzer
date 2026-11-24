@@ -8,6 +8,8 @@ somewhere deep in a service at runtime.
 """
 
 from functools import lru_cache
+from typing import Literal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -51,8 +53,9 @@ class Settings(BaseSettings):
     # --- AI / LLM (wired up in Phase 5) ---
     # LLM_PROVIDER switches the text-generation backend:
     #   "ollama" -> local Ollama server (default, used on your laptop)
-    #   "groq"   -> Groq hosted API (used for the free public deployment)
-    LLM_PROVIDER: str = "ollama"
+    #   "groq"   -> alternate hosted OpenAI-compatible API
+    #   "gemini" -> hosted Gemini API (selected for production)
+    LLM_PROVIDER: Literal["ollama", "groq", "gemini"] = "ollama"
 
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     LLM_MODEL_NAME: str = "qwen2.5:7b-instruct"
@@ -61,7 +64,19 @@ class Settings(BaseSettings):
     GROQ_MODEL_NAME: str = "openai/gpt-oss-120b"
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
 
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL_NAME: str = "gemini-3.1-flash-lite"
+    GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+
+    # Local development keeps PaddleOCR; hosted deployments can send only
+    # scanned page images to the already-configured Gemini API.
+    OCR_PROVIDER: Literal["local", "gemini"] = "local"
+
+    # Local BGE remains the default. Hosted deployments can use Gemini to
+    # avoid loading the BGE model into the limited free-service memory.
+    EMBEDDING_PROVIDER: Literal["local", "gemini"] = "local"
     EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
+    GEMINI_EMBEDDING_MODEL_NAME: str = "gemini-embedding-2"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -72,7 +87,11 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",")]
+        return [
+            origin
+            for item in self.ALLOWED_ORIGINS.split(",")
+            if (origin := item.strip())
+        ]
 
 
 @lru_cache

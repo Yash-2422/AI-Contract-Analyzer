@@ -46,6 +46,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     expect(await screen.findByText(/enter a valid email/i)).toBeInTheDocument();
+    expect(screen.getByText(/enter your password/i)).toBeInTheDocument();
     expect(loginCalled).toBe(false);
   });
 

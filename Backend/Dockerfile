@@ -2,11 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps needed later for PaddleOCR / PyMuPDF (Phase 4) — installed now
-# so the image doesn't need rebuilding from scratch each phase.
+# Production installs only the CPU-friendly web/API runtime. OCR and
+# embeddings are remote providers; local model dependencies live in
+# requirements-local.txt and Dockerfile.local.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 \
-    libglib2.0-0 \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

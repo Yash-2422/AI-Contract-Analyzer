@@ -1,0 +1,11 @@
+# Use with docker-compose.yml and docker-compose.prod.yml when PostgreSQL is
+# supplied by a managed host. Set APP_DATABASE_URL and MIGRATION_DATABASE_URL.
+services:
+  db:
+    profiles: ["internal-db"]
+
+  backend:
+    depends_on: !override []
+
+  migrate:
+    depends_on: !override []
