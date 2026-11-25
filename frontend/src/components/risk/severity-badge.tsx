@@ -9,5 +9,9 @@ const SEVERITY_VARIANT: Record<RiskSeverity, "neutral" | "gold" | "risk" | "risk
 };
 
 export function SeverityBadge({ severity }: { severity: RiskSeverity }) {
-  return <Badge variant={SEVERITY_VARIANT[severity]}>{severity}</Badge>;
+  return (
+    <Badge variant={SEVERITY_VARIANT[severity]} dot={severity === "medium"}>
+      {severity}
+    </Badge>
+  );
 }

@@ -3,12 +3,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "react-router-dom";
+import { AlertCircle, ArrowRight, Loader2, LockKeyhole } from "lucide-react";
 
 import { AuthLayout } from "@/components/layout/auth-layout";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Eyebrow } from "@/components/ui/page-shell";
 import { apiClient } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/store/auth-store";
@@ -21,9 +24,18 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-risk-600">
+      <AlertCircle className="h-3 w-3 shrink-0" />
+      {message}
+    </p>
+  );
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
-  const setSession = useAuthStore((s) => s.setSession);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,7 +54,7 @@ export function LoginPage() {
       useAuthStore.getState().setTokens(tokens.access_token, tokens.refresh_token);
 
       const { data: user } = await apiClient.get<User>("/auth/me");
-      setSession(tokens.refresh_token, user);
+      useAuthStore.getState().setSession(tokens.refresh_token, user);
 
       navigate("/dashboard");
     } catch (err) {
@@ -54,58 +66,98 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <Card className="border-none shadow-none">
-        <CardHeader className="px-0">
-          <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Sign in to review your contracts.</CardDescription>
-        </CardHeader>
-        <CardContent className="px-0">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                invalid={!!errors.email}
-                {...register("email")}
-              />
-              {errors.email && <p className="text-sm text-risk-600">{errors.email.message}</p>}
-            </div>
+      <div>
+        <Eyebrow className="mb-4">Welcome back</Eyebrow>
+        <h1 className="font-display text-[2.55rem] font-medium leading-[1.02] tracking-[-0.03em] text-ink-900 sm:text-[2.8rem]">
+          Sign in to your
+          <br />
+          <span className="italic text-primary">reading room.</span>
+        </h1>
+        <p className="mt-4 text-sm leading-relaxed text-ink-400">
+          Your contracts, analyses, and conversations are exactly where you left
+          them.
+        </p>
+      </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                invalid={!!errors.password}
-                {...register("password")}
-              />
-              {errors.password && (
-                <p className="text-sm text-risk-600">{errors.password.message}</p>
-              )}
-            </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4" noValidate>
+        <div className="space-y-1.5">
+          <Label htmlFor="email">
+            Email
+            <span className="font-mono text-[0.6rem] font-normal uppercase tracking-[0.12em] text-ink-400">
+              Required
+            </span>
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            autoFocus
+            placeholder="you@firm.com"
+            invalid={!!errors.email}
+            aria-describedby={errors.email ? "email-error" : undefined}
+            {...register("email")}
+          />
+          <div id="email-error">
+            <FieldError message={errors.email?.message} />
+          </div>
+        </div>
 
-            {serverError && (
-              <p role="alert" className="text-sm text-risk-600">
-                {serverError}
-              </p>
-            )}
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Password</Label>
+          <PasswordInput
+            id="password"
+            autoComplete="current-password"
+            placeholder="Your password"
+            invalid={!!errors.password}
+            aria-describedby={errors.password ? "password-error" : undefined}
+            {...register("password")}
+          />
+          <div id="password-error">
+            <FieldError message={errors.password?.message} />
+          </div>
+        </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
+        {serverError && (
+          <Alert tone="error" className="text-xs">
+            {serverError}
+          </Alert>
+        )}
 
-          <p className="mt-6 text-center text-sm text-ink-400">
-            Don&apos;t have an account?{" "}
-            <Link to="/register" className="font-medium text-emerald-600 hover:text-emerald-700">
-              Create one
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+        <Button type="submit" className="group w-full" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Signing in…
+            </>
+          ) : (
+            <>
+              Sign in
+              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </>
+          )}
+        </Button>
+      </form>
+
+      <div className="mt-6 flex items-center gap-3">
+        <span className="hairline flex-1" />
+        <span className="rule-label">New here?</span>
+        <span className="hairline flex-1" />
+      </div>
+
+      <p className="mt-5 text-center text-sm text-ink-400">
+        Create a workspace in under a minute.{" "}
+        <Link
+          to="/register"
+          className="font-medium text-accent underline-offset-4 transition-colors hover:text-accent-hover hover:underline"
+        >
+          Create an account
+        </Link>
+      </p>
+
+      <p className="mt-8 flex items-center justify-center gap-1.5 font-mono text-[0.6rem] uppercase tracking-[0.12em] text-ink-400">
+        <LockKeyhole className="h-3 w-3" />
+        Encrypted authentication · Private by default
+      </p>
     </AuthLayout>
   );
 }

@@ -6,59 +6,127 @@
   :root {
     color-scheme: light;
 
-    --color-paper: 250 248 243;
-    --color-surface: 255 255 255;
+    /* Warm editorial paper */
+    --color-canvas: 243 240 232;
+    /* #F3F0E8 */
+    --color-paper: 243 240 232;
+    --color-surface: 251 249 243;
+    /* warm paper white */
+    --color-surface-raised: 255 253 248;
+    --color-surface-sunken: 229 224 212;
+    /* #E5E0D4 */
 
-    --color-ink-50: 245 246 247;
-    --color-ink-100: 231 233 236;
-    --color-ink-200: 199 204 211;
-    --color-ink-400: 107 116 128;
-    --color-ink-600: 61 69 82;
-    --color-ink-900: 27 36 48;
+    /* Ink: charcoal with a green undertone */
+    --color-ink-50: 239 235 225;
+    --color-ink-100: 218 212 199;
+    --color-ink-200: 195 186 169;
+    --color-ink-400: 105 108 98;
+    --color-ink-600: 67 76 69;
+    --color-ink-900: 27 35 31;
 
-    --color-emerald-50: 234 243 240;
-    --color-emerald-100: 207 227 220;
-    --color-emerald-600: 31 93 76;
-    --color-emerald-700: 22 67 56;
+    /* Deep forest, terracotta, brass. The terracotta and brass are
+       deliberately a shade deeper than their decorative counterparts so
+       small labels still clear WCAG AA on the warm paper background. */
+    --color-primary: 36 72 62;
+    /* #24483E */
+    --color-primary-hover: 27 56 48;
+    --color-primary-soft: 224 232 226;
+    --color-primary-foreground: 250 247 239;
 
-    --color-risk-50: 251 238 231;
-    --color-risk-100: 245 211 194;
-    --color-risk-600: 193 68 14;
+    --color-accent: 165 95 70;
+    /* #A55F46, adjusted from #B66D50 */
+    --color-accent-hover: 135 73 50;
+    --color-accent-soft: 245 230 221;
 
-    --color-gold: 184 134 46;
+    --color-brass: 130 106 60;
+    /* #826A3C */
+    --color-copper: 165 95 70;
+    --color-champagne: 214 196 162;
 
-    --focus-ring: 31 93 76;
+    --color-emerald-50: 233 239 233;
+    --color-emerald-100: 204 220 210;
+    --color-emerald-600: 36 72 62;
+    --color-emerald-700: 27 56 48;
+
+    --color-risk-50: 247 233 226;
+    --color-risk-100: 238 210 196;
+    --color-risk-600: 170 73 46;
+
+    --color-gold: 122 98 51;
+
+    --color-chat-user: 36 72 62;
+    --color-chat-user-foreground: 250 247 239;
+    --color-chat-assistant: 255 253 248;
+    --color-chat-assistant-foreground: 27 35 31;
+
+    --focus-ring: 36 72 62;
+    --scrollbar-thumb: 190 181 163;
+    --scrollbar-track: 243 240 232;
+    /* Sidebar surfaces */
+    --color-sidebar: 251 249 243;
+    --color-sidebar-hover: 239 235 225;
+    --color-sidebar-active: 224 232 226;
+    --color-sidebar-border: 218 212 199;
   }
 
   .dark {
     color-scheme: dark;
 
-    /* "Executive Suite" — deep charcoal-navy, not pure black, with
-       brightened jewel-tone accents so they still read against a dark
-       surface. Scale semantics stay the same as light mode (900 = highest
-       emphasis, 400 = muted) even though the literal luminance flips. */
-    --color-paper: 15 19 26;
-    --color-surface: 24 29 38;
+    /* Deep green-black, charcoal-green surfaces, warm light */
+    --color-canvas: 16 27 25;
+    /* #101B19 */
+    --color-paper: 16 27 25;
+    --color-surface: 25 39 35;
+    /* #192723 */
+    --color-surface-raised: 31 48 43;
+    --color-surface-sunken: 21 34 30;
 
-    --color-ink-50: 24 29 38;
-    --color-ink-100: 38 45 56;
-    --color-ink-200: 58 67 82;
-    --color-ink-400: 133 143 158;
-    --color-ink-600: 186 194 206;
-    --color-ink-900: 240 242 244;
+    --color-ink-50: 29 46 41;
+    --color-ink-100: 45 63 55;
+    --color-ink-200: 66 84 75;
+    --color-ink-400: 137 154 144;
+    --color-ink-600: 184 196 186;
+    --color-ink-900: 242 237 226;
 
-    --color-emerald-50: 15 35 30;
-    --color-emerald-100: 20 51 43;
-    --color-emerald-600: 58 176 145;
-    --color-emerald-700: 82 199 168;
+    --color-primary: 47 83 69;
+    /* #2F5345 */
+    --color-primary-hover: 59 100 84;
+    --color-primary-soft: 33 55 47;
+    --color-primary-foreground: 246 242 232;
 
-    --color-risk-50: 42 22 17;
-    --color-risk-100: 63 32 24;
-    --color-risk-600: 232 106 71;
+    --color-accent: 193 123 91;
+    /* #C17B5B */
+    --color-accent-hover: 207 140 108;
+    --color-accent-soft: 55 40 32;
 
-    --color-gold: 219 165 79;
+    --color-brass: 181 153 99;
+    --color-copper: 193 123 91;
+    --color-champagne: 212 196 162;
 
-    --focus-ring: 58 176 145;
+    --color-emerald-50: 29 48 42;
+    --color-emerald-100: 43 68 58;
+    --color-emerald-600: 145 184 161;
+    --color-emerald-700: 174 205 187;
+
+    --color-risk-50: 57 35 29;
+    --color-risk-100: 82 48 38;
+    --color-risk-600: 224 127 96;
+
+    --color-gold: 194 166 111;
+
+    --color-chat-user: 45 76 64;
+    --color-chat-user-foreground: 247 243 234;
+    --color-chat-assistant: 31 48 43;
+    --color-chat-assistant-foreground: 238 233 222;
+
+    --focus-ring: 212 196 162;
+    --scrollbar-thumb: 67 86 76;
+    --scrollbar-track: 16 27 25;
+    /* Sidebar surfaces */
+    --color-sidebar: 20 34 30;
+    --color-sidebar-hover: 29 46 41;
+    --color-sidebar-active: 33 55 47;
+    --color-sidebar-border: 45 63 55;
   }
 
   * {
@@ -66,11 +134,35 @@
   }
 
   html {
-    @apply bg-paper;
+    @apply bg-canvas;
+    scrollbar-gutter: stable;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply bg-paper text-ink-900 font-sans antialiased transition-colors duration-200;
+    @apply bg-canvas font-sans text-ink-900 antialiased;
+    min-height: 100vh;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+    transition:
+      background-color 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: rgb(var(--color-accent) / 0.24);
+    color: rgb(var(--color-ink-900));
   }
 
   :focus-visible {
@@ -78,7 +170,33 @@
     outline-offset: 2px;
   }
 
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--scrollbar-track));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--scrollbar-thumb));
+    border: 3px solid rgb(var(--scrollbar-track));
+    border-radius: 999px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: rgb(var(--color-ink-400));
+    opacity: 1;
+  }
+
+  [type="search"]::-webkit-search-cancel-button {
+    appearance: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -87,5 +205,256 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+@layer components {
+
+  /* Fine paper grain used sparingly behind hero sections. */
+  .paper-texture {
+    background-image:
+      radial-gradient(rgb(var(--color-ink-900) / 0.035) 0.6px, transparent 0.6px),
+      radial-gradient(rgb(var(--color-brass) / 0.04) 0.5px, transparent 0.5px);
+    background-position:
+      0 0,
+      8px 8px;
+    background-size:
+      16px 16px,
+      18px 18px;
+  }
+
+  .rule-label {
+    @apply font-mono text-2xs font-medium uppercase tracking-[0.22em] text-ink-400;
+  }
+
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg,
+        rgb(var(--color-ink-200) / 0.7),
+        rgb(var(--color-ink-200) / 0.12));
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg,
+        rgb(var(--color-ink-50)) 20%,
+        rgb(var(--color-ink-100) / 0.7) 40%,
+        rgb(var(--color-ink-50)) 60%);
+    background-size: 200% 100%;
+    animation: shimmer 2.2s linear infinite;
+  }
+
+  .markdown-body {
+    color: rgb(var(--color-ink-600));
+    font-size: 0.9375rem;
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+
+  .markdown-body> :first-child {
+    margin-top: 0;
+  }
+
+  .markdown-body> :last-child {
+    margin-bottom: 0;
+  }
+
+  .markdown-body h1,
+  .markdown-body h2,
+  .markdown-body h3,
+  .markdown-body h4 {
+    color: rgb(var(--color-ink-900));
+    font-family: "Fraunces", "Newsreader", ui-serif, Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .markdown-body h1 {
+    margin: 2rem 0 0.75rem;
+    font-size: 1.75rem;
+  }
+
+  .markdown-body h2 {
+    margin: 1.9rem 0 0.7rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid rgb(var(--color-ink-100));
+    font-size: 1.4rem;
+  }
+
+  .markdown-body h3 {
+    margin: 1.55rem 0 0.55rem;
+    font-size: 1.125rem;
+  }
+
+  .markdown-body h4 {
+    margin: 1.35rem 0 0.45rem;
+    font-size: 1rem;
+  }
+
+  .markdown-body p {
+    margin: 0.8rem 0;
+  }
+
+  .markdown-body strong {
+    color: rgb(var(--color-ink-900));
+    font-weight: 600;
+  }
+
+  .markdown-body em {
+    color: rgb(var(--color-ink-600));
+  }
+
+  .markdown-body del {
+    color: rgb(var(--color-ink-400));
+  }
+
+  .markdown-body a {
+    color: rgb(var(--color-accent));
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: color 160ms ease;
+  }
+
+  .markdown-body a:hover {
+    color: rgb(var(--color-accent-hover));
+  }
+
+  .markdown-body ul,
+  .markdown-body ol {
+    margin: 0.75rem 0;
+    padding-left: 1.35rem;
+  }
+
+  .markdown-body ul {
+    list-style: none;
+  }
+
+  .markdown-body ul>li {
+    position: relative;
+  }
+
+  .markdown-body ul>li::before {
+    content: "";
+    position: absolute;
+    left: -1rem;
+    top: 0.68em;
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 999px;
+    background: rgb(var(--color-brass));
+  }
+
+  .markdown-body ol {
+    list-style: decimal;
+  }
+
+  .markdown-body ol>li::marker {
+    color: rgb(var(--color-brass));
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.8em;
+  }
+
+  .markdown-body li {
+    margin: 0.3rem 0;
+    padding-left: 0.15rem;
+  }
+
+  .markdown-body li>ul,
+  .markdown-body li>ol {
+    margin: 0.35rem 0;
+  }
+
+  .markdown-body blockquote {
+    margin: 1rem 0;
+    border-left: 2px solid rgb(var(--color-brass));
+    background: rgb(var(--color-primary-soft) / 0.5);
+    padding: 0.65rem 1rem;
+    color: rgb(var(--color-ink-600));
+  }
+
+  .markdown-body blockquote p {
+    margin: 0.25rem 0;
+  }
+
+  .markdown-body hr {
+    margin: 1.6rem 0;
+    border: 0;
+    border-top: 1px solid rgb(var(--color-ink-100));
+  }
+
+  .markdown-body code {
+    border: 1px solid rgb(var(--color-ink-100));
+    border-radius: 0.3rem;
+    background: rgb(var(--color-ink-50));
+    padding: 0.12rem 0.32rem;
+    color: rgb(var(--color-ink-900));
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.85em;
+  }
+
+  .markdown-body pre {
+    margin: 1rem 0;
+    overflow-x: auto;
+    border: 1px solid rgb(var(--color-ink-100));
+    border-radius: 0.6rem;
+    background: rgb(var(--color-surface-sunken));
+    padding: 0.95rem 1rem;
+  }
+
+  .markdown-body pre code {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.65;
+  }
+
+  .markdown-table-wrap {
+    margin: 1rem 0;
+    overflow-x: auto;
+    border: 1px solid rgb(var(--color-ink-100));
+    border-radius: 0.6rem;
+  }
+
+  .markdown-body table {
+    width: 100%;
+    min-width: 32rem;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+
+  .markdown-body thead {
+    background: rgb(var(--color-ink-50));
+  }
+
+  .markdown-body th {
+    color: rgb(var(--color-ink-900));
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .markdown-body th,
+  .markdown-body td {
+    border-bottom: 1px solid rgb(var(--color-ink-100));
+    padding: 0.65rem 0.8rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .markdown-body tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .markdown-body tbody tr {
+    transition: background-color 160ms ease;
+  }
+
+  .markdown-body tbody tr:hover {
+    background: rgb(var(--color-ink-50) / 0.75);
   }
 }

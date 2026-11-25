@@ -1,7 +1,10 @@
 import { useCallback, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuthStore } from "@/store/auth-store";
-import { apiClient } from "@/lib/api-client";
+import {
+  apiClient,
+  getAccessTokenForRequest,
+  refreshAccessTokenForRequest,
+} from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-keys";
 
 interface UseChatStreamResult {
@@ -17,8 +20,7 @@ export function useChatStream(): UseChatStreamResult {
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   // Guards against a stale response still writing to state after a newer
-  // call started (e.g. user sends a second message before the first
-  // stream finishes) - only the latest call's writes are allowed through.
+  // call started - only the latest call's writes are allowed through.
   const requestIdRef = useRef(0);
 
   const sendStreamingMessage = useCallback(
@@ -30,20 +32,35 @@ export function useChatStream(): UseChatStreamResult {
 
       try {
         const baseURL = apiClient.defaults.baseURL ?? "/api/v1";
-        const accessToken = useAuthStore.getState().accessToken;
 
-        const response = await fetch(`${baseURL}/chat/sessions/${sessionId}/messages/stream`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-          credentials: "include",
-          body: JSON.stringify({ content }),
-        });
+        async function requestStream(token: string | null) {
+          return fetch(`${baseURL}/chat/sessions/${sessionId}/messages/stream`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            credentials: "include",
+            body: JSON.stringify({ content }),
+          });
+        }
+
+        let response = await requestStream(await getAccessTokenForRequest());
+
+        // A stream request can outlive the access token in a long-lived tab.
+        // Refresh once using the same rotating-token flow and retry before
+        // surfacing an error.
+        if (response.status === 401) {
+          const refreshedToken = await refreshAccessTokenForRequest();
+          response = await requestStream(refreshedToken);
+        }
 
         if (!response.ok || !response.body) {
-          throw new Error(`Stream request failed: ${response.status}`);
+          throw new Error(
+            response.status === 401
+              ? "Your session expired. Sign in again to continue."
+              : `The assistant couldn't respond (${response.status}).`,
+          );
         }
 
         const reader = response.body.getReader();
@@ -60,12 +77,16 @@ export function useChatStream(): UseChatStreamResult {
           buffer = lines.pop() ?? ""; // keep any incomplete trailing event
 
           for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const payload = line.slice("data: ".length);
+            const dataLine = line
+              .split("\n")
+              .find((part) => part.startsWith("data: "));
+            if (!dataLine) continue;
+
+            const payload = dataLine.slice("data: ".length);
             try {
               const parsed = JSON.parse(payload) as { token?: string };
               if (parsed.token) {
-                setStreamedText((prev) => prev + parsed.token);
+                setStreamedText((previous) => previous + parsed.token);
               }
             } catch {
               // Ignore malformed keep-alive/done events without a token field.
@@ -74,7 +95,11 @@ export function useChatStream(): UseChatStreamResult {
         }
       } catch (err) {
         if (thisRequestId === requestIdRef.current) {
-          setError(err instanceof Error ? err.message : "Something went wrong.");
+          setError(
+            err instanceof Error
+              ? err.message
+              : "The assistant couldn't respond. Please try again.",
+          );
         }
       } finally {
         if (thisRequestId === requestIdRef.current) {

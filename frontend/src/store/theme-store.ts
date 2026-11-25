@@ -12,7 +12,7 @@ interface ThemeState {
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "light";
   // Only used the very first time — after that the persisted choice wins.
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export const useThemeStore = create<ThemeState>()(

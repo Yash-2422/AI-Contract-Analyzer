@@ -29,15 +29,29 @@ export function useContract(contractId: string | undefined) {
   });
 }
 
+export interface UploadContractVariables {
+  file: File;
+  onProgress?: (percent: number) => void;
+}
+
 export function useUploadContract() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, onProgress }: UploadContractVariables) => {
       const formData = new FormData();
       formData.append("file", file);
       const { data } = await apiClient.post<Contract>("/contracts", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (event) => {
+          if (!onProgress) return;
+          if (event.total) {
+            onProgress(Math.min(100, Math.round((event.loaded / event.total) * 100)));
+          } else if (event.progress != null) {
+            onProgress(Math.min(100, Math.round(event.progress * 100)));
+          }
+        },
       });
+      onProgress?.(100);
       return data;
     },
     onSuccess: () => {

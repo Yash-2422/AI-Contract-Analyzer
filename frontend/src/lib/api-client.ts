@@ -38,6 +38,22 @@ function getOrRefreshAccessToken(): Promise<string> {
   return refreshPromise;
 }
 
+/**
+ * The streaming chat endpoint uses fetch() so it can read SSE incrementally,
+ * which means it sits outside Axios's interceptors. These helpers let that
+ * path use the same in-memory token and rotating refresh flow.
+ */
+export async function getAccessTokenForRequest(): Promise<string | null> {
+  const { accessToken, refreshToken } = useAuthStore.getState();
+  if (accessToken) return accessToken;
+  if (refreshToken) return getOrRefreshAccessToken();
+  return null;
+}
+
+export async function refreshAccessTokenForRequest(): Promise<string> {
+  return getOrRefreshAccessToken();
+}
+
 apiClient.interceptors.request.use(async (config) => {
   const endpoint = config.url ?? "";
   const isAuthMutation = /\/auth\/(login|register|refresh|logout)(?:$|\?)/.test(endpoint);
