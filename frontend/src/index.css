@@ -223,6 +223,71 @@
       18px 18px;
   }
 
+  .document-paper {
+    background-color: rgb(var(--color-surface-raised));
+    background-image:
+      linear-gradient(90deg,
+        transparent 0,
+        transparent 2.25rem,
+        rgb(var(--color-accent) / 0.1) 2.25rem,
+        rgb(var(--color-accent) / 0.1) 2.3rem,
+        transparent 2.3rem),
+      repeating-linear-gradient(180deg,
+        transparent 0,
+        transparent 1.68rem,
+        rgb(var(--color-ink-200) / 0.18) 1.68rem,
+        rgb(var(--color-ink-200) / 0.18) 1.72rem);
+    background-position: 0 0, 0 3.25rem;
+    background-size: 100% 100%, 100% 1.72rem;
+  }
+
+  .dark .document-paper {
+    background-image:
+      linear-gradient(90deg,
+        transparent 0,
+        transparent 2.25rem,
+        rgb(var(--color-accent) / 0.16) 2.25rem,
+        rgb(var(--color-accent) / 0.16) 2.3rem,
+        transparent 2.3rem),
+      repeating-linear-gradient(180deg,
+        transparent 0,
+        transparent 1.68rem,
+        rgb(var(--color-ink-200) / 0.2) 1.68rem,
+        rgb(var(--color-ink-200) / 0.2) 1.72rem);
+  }
+
+  .hero-document-shadow {
+    box-shadow:
+      0 2px 2px rgb(31 38 33 / 0.05),
+      0 14px 28px -14px rgb(31 38 33 / 0.24),
+      0 36px 70px -28px rgb(31 38 33 / 0.42);
+  }
+
+  .dark .hero-document-shadow {
+    box-shadow:
+      0 2px 2px rgb(0 0 0 / 0.2),
+      0 16px 34px -14px rgb(0 0 0 / 0.45),
+      0 40px 82px -30px rgb(0 0 0 / 0.65);
+  }
+
+
+  .document-paper {
+    background-color: rgb(var(--color-surface-raised));
+    background-image:
+      linear-gradient(90deg, transparent 0, transparent 2.25rem, rgb(var(--color-accent) / 0.1) 2.25rem, rgb(var(--color-accent) / 0.1) 2.3rem, transparent 2.3rem),
+      repeating-linear-gradient(180deg, transparent 0, transparent 1.68rem, rgb(var(--color-ink-200) / 0.18) 1.68rem, rgb(var(--color-ink-200) / 0.18) 1.72rem);
+    background-position: 0 0, 0 3.25rem;
+    background-size: 100% 100%, 100% 1.72rem;
+  }
+
+  .hero-document-shadow {
+    box-shadow: 0 2px 2px rgb(31 38 33 / 0.05), 0 14px 28px -14px rgb(31 38 33 / 0.24), 0 36px 70px -28px rgb(31 38 33 / 0.42);
+  }
+
+  .dark .hero-document-shadow {
+    box-shadow: 0 2px 2px rgb(0 0 0 / 0.2), 0 16px 34px -14px rgb(0 0 0 / 0.45), 0 40px 82px -30px rgb(0 0 0 / 0.65);
+  }
+
   .rule-label {
     @apply font-mono text-2xs font-medium uppercase tracking-[0.22em] text-ink-400;
   }
